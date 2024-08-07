@@ -2,8 +2,7 @@ This is a [Next.js](https://nextjs.org/) project bootstrapped with [`create-next
 
 ## Getting Started
 
-https://socket.io/how-to/use-with-nextjs 
-
+https://socket.io/how-to/use-with-nextjs
 
 First, run the development server:
 
