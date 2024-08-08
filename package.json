@@ -4,9 +4,9 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "ts-node-esm server.ts",
-    "build": "next build",
-    "start": "NODE_ENV=production ts-node-esm server.ts",
+    "dev": "GENERATE_SOURCEMAP=false ts-node-esm server.ts",
+    "build": "GENERATE_SOURCEMAP=false next build",
+    "start": "GENERATE_SOURCEMAP=false NODE_ENV=production ts-node-esm server.ts",
     "lint": "next lint"
   },
   "dependencies": {

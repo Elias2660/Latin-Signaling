@@ -1,16 +1,34 @@
 "use client"
 import { useEffect, useState } from "react";
 import { socket } from "../socket";
-import connectDB  from "@/config/database"
+import connectDB from "@/config/database"
+import { signIn, signOut, useSession, getProviders } from "next-auth/react"
+import { usePathname } from "next/navigation";
 
 export default function Home() {
+  const { data: session } = useSession();
+  console.log(session)
+
   const [isConnected, setIsConnected] = useState(false);
   const [transport, setTransport] = useState("N/A");
   const [itemList, updateItemList] = useState<string[]>([]);
   const [toServer, updateToServer] = useState("");
   const [fromServer, updateFromServer] = useState("");
+  const [providers, setProviders] = useState<Record<string, any> | null>(null);
 
+  const pathname = usePathname()
   connectDB();
+
+  useEffect(() => {
+    const setAuthProviders = async () => {
+      const res = await getProviders();
+      console.log(`Providers: ${res}`)
+      setProviders(res);
+    }
+    setAuthProviders()
+  }, [])
+
+  console.log(`Logged Providers: ${providers}`)
 
   useEffect(() => {
     if (socket.connected) {
@@ -89,6 +107,9 @@ export default function Home() {
 
   return (
     <main>
+      {/* <script src="https://apis.google.com/js/platform.js" async defer></script> */}
+      {/* <meta name="google-signin-client_id" content={`${process.env.GOOGLE_CLIENT_ID}`} /> */}
+      {/* <div className="g-signin2" data-onsuccess="onSignIn" >{" "}</div> */}
       <div>
         <p>Status: {isConnected ? "connected" : "disconnected"}</p>
         <p>Transport: {transport}</p>

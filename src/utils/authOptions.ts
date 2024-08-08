@@ -1,7 +1,6 @@
-import { AuthOptions } from 'next-auth'
 import GoogleProvider from 'next-auth/providers/google'
 
-const authOptions: AuthOptions = {
+export const authOptions = {
     providers: [
         GoogleProvider({
             clientId: process.env.GOOGLE_CLIENT_ID ?? '',
@@ -21,18 +20,21 @@ const authOptions: AuthOptions = {
             // check in database if user exists
             // if not create user
             // return true to allow user to sign in
-            return true;
+            /* The `return true;` statement in the `signIn` callback function is used to indicate that
+            the sign-in process was successful and to allow the user to sign in. When this callback
+            function is executed after a successful sign-in attempt, returning `true` signifies that
+            the user should be allowed to proceed with the sign-in process. */
+            // return true;
         },
         // session callback that
         async session({ session, token }: { session: any, token: any }) {
             // get user from database 
             // assign user id from session
             // return session
-            return session;
+            // return session;
         }
     }
 };
 
-export default authOptions;
 
 

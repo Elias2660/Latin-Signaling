@@ -1,13 +1,9 @@
-'use server'
-import mongoose, { mongo } from "mongoose";
-import dotenv from "dotenv";
+import mongoose from 'mongoose';
 
-
-dotenv.config();
 let connected = false;
 
 export default async function connectDB() {
-  mongoose.set("strictQuery", true);
+  // mongoose.set("strictQuery", true);
 
   if (connected) {
     console.log(`MongoDB already connected`);
@@ -15,6 +11,7 @@ export default async function connectDB() {
   }
 
   try {
+    console.log(`Connecting to MongoDB ${process.env.MONGODB_URI}`);
     await mongoose.connect(process.env.MONGODB_URI ?? "");
     connected = true;
   } catch (error) {
