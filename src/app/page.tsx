@@ -1,8 +1,7 @@
 "use client"
 import { useEffect, useState } from "react";
 import { socket } from "../socket";
-import { time } from "console";
-
+import connectDB  from "@/config/database"
 
 export default function Home() {
   const [isConnected, setIsConnected] = useState(false);
@@ -10,6 +9,8 @@ export default function Home() {
   const [itemList, updateItemList] = useState<string[]>([]);
   const [toServer, updateToServer] = useState("");
   const [fromServer, updateFromServer] = useState("");
+
+  connectDB();
 
   useEffect(() => {
     if (socket.connected) {
