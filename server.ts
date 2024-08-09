@@ -35,6 +35,15 @@ app.prepare().then(() => {
       let t = Date.now() - time;
       socket.emit("ping", t, Date.now()); // the time to get from client to the server, the time to get from server to the client
     });
+
+    socket.on("joinRoom", (room: string) => {
+      // console.log(`🚪 ${socket.id.substring(0, 2)} joining room ${room}`);
+      // socket.join(room);
+    });
+
+
+
+
   });
 
   httpServer.listen(port, () => {
