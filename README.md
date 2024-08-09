@@ -1,7 +1,6 @@
 This is a [Next.js](https://nextjs.org/) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
 
-
-https://lazard.udemy.com/organization/search/?src=ukw&q=google+auth+nextjs 
+https://lazard.udemy.com/organization/search/?src=ukw&q=google+auth+nextjs
 
 ## Getting Started
 
