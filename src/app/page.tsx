@@ -1,6 +1,6 @@
 "use client"
 import { useEffect, useState } from "react";
-import { socket } from "../socket";
+import socket  from "../socket";
 import connectDB from "@/config/database"
 import { signIn, signOut, useSession, getProviders } from "next-auth/react"
 import Image from "next/image";
@@ -127,7 +127,7 @@ export default function Home() {
   // save the list when stuff happens
   useEffect(() => {
     const SaveList = async () => {
-      if (itemList.length !== 0) {
+      if (itemList.length !== 0 && session) {
         await saveList(itemList)
         console.log("Saved List")
       }
