@@ -21,7 +21,6 @@ export default function Home() {
 
   useEffect(() => {
     const setupDB = async () => {
-
       await connectDB();
     }
     setupDB()
@@ -115,7 +114,6 @@ export default function Home() {
     updateItemList([])
   }
 
-
   useEffect(() => {
     const fetchList = async () => {
       if (session) {
@@ -125,6 +123,17 @@ export default function Home() {
     };
     fetchList();
   }, [session]);
+
+  // save the list when stuff happens
+  useEffect(() => {
+    const SaveList = async () => {
+      if (itemList.length !== 0) {
+        await saveList(itemList)
+        console.log("Saved List")
+      }
+    }
+    SaveList();
+  }, [itemList])
 
   let profileImage = session?.user?.image
 
