@@ -73,6 +73,8 @@ export default function joinRoom() {
             updateFromServer((Date.now() - fromServer).toString());
         }
 
+        // create way to create rooms
+
         socket.on("connect", onConnect);
         socket.on("disconnect", onDisconnect);
         socket.on("create", onCreate);
@@ -186,6 +188,11 @@ export default function joinRoom() {
 
             <button onClick={clearList} className="bg-red-500 rounded-md border-spacing-2 p-3 m-3"> clear</button>
             {session && <button onClick={async () => await saveList(itemList)} className="bg-orange-200 rounded-md border-spacing-2 p-3 m-3"> save list</button>}
+            {/* <button onClick={create room} className="bg-red-500 rounded-md border-spacing-2 p-3 m-3"> create room</button> */}
+            
+            {/* <input id="fillbox" lpaceholder="message" className="text-stone-800	bg-red-300 border-spacing-2 rounded-md p-3" /> */}
+            {/* <button onClick={clearList} className="bg-red-500 rounded-md border-spacing-2 p-3 m-3"> join room</button> */}
+
         </div>
     </main>)
 }
