@@ -41,7 +41,11 @@ app.prepare().then(() => {
       // socket.join(room);
     });
 
+    socket.on("leaveRoom", (room: string) => {});
 
+    socket.on("kick", (user: string) => {});
+
+    socket.on("reset", () => {});
 
 
   });
