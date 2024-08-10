@@ -19,6 +19,10 @@ const RoomSchema = new Schema({
     type: [String],
     required: [true, "Please provide an admin"],
   },
+  locked: {
+    type: Boolean,
+    default: false,
+  }
 });
 
 const Room = models.Room || model("Room", RoomSchema);
