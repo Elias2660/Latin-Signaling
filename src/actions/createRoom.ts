@@ -36,7 +36,13 @@ export default async function createRoom() {
       admin: [ `${user.id}` ],
     });
 
+    // save the room to the user's account
+    const userRooms = await User.findOne({ _id: user.id }, "hosted_rooms");
+    // update the user's rooms
+    await User.updateOne({ _id: user.id }, { rooms: [ ...userRooms, joinID ] });
+
     newRoom.save();
+    console.log("Room created:", joinID);
     return joinID; // return true if successful
   } catch (error) {
     console.error("Error creating room:", error);

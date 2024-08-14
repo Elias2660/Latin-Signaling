@@ -95,10 +95,16 @@ export default function joinRoom() {
 
 
     async function createAndSetRoom() {
+        // this is so that the paragraph tag will display the currently created room
         const response = await createRoom();
         if (typeof response === 'string') {
             setCreatedRoom(response);
         }
+    }
+
+    async function joinRoom() {
+        // join the room
+        console.log("Join Room Button Pressed")
     }
 
     let profileImage = session?.user?.image
@@ -132,12 +138,12 @@ export default function joinRoom() {
             <p>
                 Time to come back from server: {fromServer} ms
             </p>
-
+            {createdRoom && <p> Room created is {createdRoom} </p>}
+            {! createdRoom && <p>Room is not created yet</p>}
+            {session && <button onClick={async () => createAndSetRoom()} className="bg-red-500 rounded-md border-spacing-2 p-3 m-3"> create room</button>}
+            {session && createdRoom && <Link href={`/rooms/session/${createdRoom}`} className="m-3 bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"> Join as admin </Link> }
             {session && <input id="fillbox" placeholder="join code" className="text-stone-800	bg-red-300 border-spacing-2 rounded-md p-3" />}
-            {session && <button onClick={async () => createRoom} className="bg-red-500 rounded-md border-spacing-2 p-3 m-3"> create room</button>}
-
-            {/* <button onClick={joinRoom} className="bg-red-500 rounded-md border-spacing-2 p-3 m-3"> join room</button> */}
-
+            {session && <button onClick={async () => joinRoom()} className="bg-red-500 rounded-md border-spacing-2 p-3 m-3"> join room</button>}
         </div>
     </main>)
 }
