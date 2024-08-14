@@ -32,7 +32,8 @@ export default async function createRoom() {
     const newRoom = new Room({
       name: `Room ${joinID}`,
       login_code: joinID,
-      admin: [],
+      // the admin should be the user who created the room
+      admin: [ `${user.id}` ],
     });
 
     newRoom.save();

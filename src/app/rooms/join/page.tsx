@@ -5,9 +5,8 @@ import connectDB from "@/config/database"
 import { signIn, signOut, useSession, getProviders } from "next-auth/react"
 import Image from "next/image";
 import defaultImg from "/public/default.jpg"
-import saveList from "@/actions/saveList";
-import getList from "@/actions/getList";
 import Link from "next/link";
+import createRoom from "@/actions/createRoom"
 
 
 export default function joinRoom() {
@@ -16,10 +15,12 @@ export default function joinRoom() {
 
     const [isConnected, setIsConnected] = useState(false);
     const [transport, setTransport] = useState("N/A");
-    const [itemList, updateItemList] = useState<string[]>([]);
     const [toServer, updateToServer] = useState("");
     const [fromServer, updateFromServer] = useState("");
     const [providers, setProviders] = useState<Record<string, any> | null>(null);
+
+    // stuff for creating a room
+    const [createdRoom, setCreatedRoom] = useState<null | String>(null);
 
     useEffect(() => {
         const setupDB = async () => {
@@ -58,15 +59,6 @@ export default function joinRoom() {
             setTransport("N/A");
         }
 
-        function onCreate(text: string): void {
-            console.log("Thing about to be created");
-            updateItemList(previous => [...previous, text]);
-            console.log(`message received: ${text}`);
-        }
-
-        function onClear(): void {
-            updateItemList([]);
-        }
 
         function onPing(toServer: number, fromServer: number): void {
             updateToServer((toServer).toString());
@@ -77,18 +69,14 @@ export default function joinRoom() {
 
         socket.on("connect", onConnect);
         socket.on("disconnect", onDisconnect);
-        socket.on("create", onCreate);
         socket.on("ping", onPing);
 
-        socket.on("clear", onClear);
         return () => {
             socket.off("connect", onConnect);
             socket.off("disconnect", onDisconnect);
-            socket.off("create", onCreate);
-            socket.off("clear", onClear);
             socket.off("ping", onPing);
         };
-    }, [itemList]);
+    }, []);
 
 
 
@@ -106,42 +94,14 @@ export default function joinRoom() {
     }, []);
 
 
-
-    function sendMessage(event: React.MouseEvent<HTMLButtonElement, MouseEvent>): void {
-        const text = (document.querySelector("input") as HTMLInputElement).value;
-        socket.emit('message', text);
-        updateItemList([...itemList, text])
-    }
-
-    function clearList(event: React.MouseEvent<HTMLButtonElement, MouseEvent>): void {
-        socket.emit("clear")
-        console.log("Text Cleared")
-        updateItemList([])
-    }
-
-    useEffect(() => {
-        const fetchList = async () => {
-            if (session) {
-                const response = await getList();
-                updateItemList(response);
-            }
-        };
-        fetchList();
-    }, [session]);
-
-    // save the list when stuff happens
-    useEffect(() => {
-        const SaveList = async () => {
-            if (itemList.length !== 0 && session) {
-                await saveList(itemList)
-                console.log("Saved List")
-            }
+    async function createAndSetRoom() {
+        const response = await createRoom();
+        if (typeof response === 'string') {
+            setCreatedRoom(response);
         }
-        SaveList();
-    }, [itemList])
+    }
 
     let profileImage = session?.user?.image
-
 
     return (<main className="m-3">
         {session && <button type="button"
@@ -173,23 +133,9 @@ export default function joinRoom() {
                 Time to come back from server: {fromServer} ms
             </p>
 
-            <p>
-                messages:
-            </p>
-            <ol>
-                {itemList.map(
-                    (x, index) => <li key={index}> {x} </li>
-                )}
-            </ol>
+            {session && <input id="fillbox" placeholder="join code" className="text-stone-800	bg-red-300 border-spacing-2 rounded-md p-3" />}
+            {session && <button onClick={async () => createRoom} className="bg-red-500 rounded-md border-spacing-2 p-3 m-3"> create room</button>}
 
-            <input id="fillbox" placeholder="message" className="text-stone-800	bg-red-300 border-spacing-2 rounded-md p-3" />
-
-            <button onClick={sendMessage} type='submit' className="bg-green-400 rounded-md border-spacing-2 p-3 m-3" > send </button>
-
-            <button onClick={clearList} className="bg-red-500 rounded-md border-spacing-2 p-3 m-3"> clear</button>
-            {session && <button onClick={async () => await saveList(itemList)} className="bg-orange-200 rounded-md border-spacing-2 p-3 m-3"> save list</button>}
-            {/* <button onClick={create room} className="bg-red-500 rounded-md border-spacing-2 p-3 m-3"> create room</button> */}
-            {/* <input id="fillbox" lpaceholder="message" className="text-stone-800	bg-red-300 border-spacing-2 rounded-md p-3" /> */}
             {/* <button onClick={joinRoom} className="bg-red-500 rounded-md border-spacing-2 p-3 m-3"> join room</button> */}
 
         </div>

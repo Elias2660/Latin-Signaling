@@ -14,10 +14,6 @@ const UserSchema = new Schema({
   image: {
     type: String,
   },
-  objectList: {
-    type: [String],
-    default: [],
-  },
   createdAt: {
     type: Date,
     default: Date.now,
