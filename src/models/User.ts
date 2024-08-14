@@ -14,13 +14,17 @@ const UserSchema = new Schema({
   image: {
     type: String,
   },
-  objectList: {
-    type: [String],
-    default: [],
-  },
   createdAt: {
     type: Date,
     default: Date.now,
+  },
+  admin: {
+    type: Boolean,
+    default: false,
+  },
+  hosted_rooms: {
+    type: [String],
+    default: [],
   },
 });
 
