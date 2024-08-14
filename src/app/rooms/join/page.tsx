@@ -1,6 +1,7 @@
 'use client'
 import socket from "@/socket"
 import { useEffect, useState, useRef } from "react"
+import { Session } from "next-auth"
 import connectDB from "@/config/database"
 import { signIn, signOut, useSession, getProviders } from "next-auth/react"
 import Image from "next/image";
@@ -124,6 +125,7 @@ export default function joinRoom() {
         }, 1000);
         return () => clearTimeout(timeout);
     }, []);
+    
 
 
     async function createAndSetRoom() {

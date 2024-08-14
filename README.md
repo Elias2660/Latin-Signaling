@@ -1,10 +1,25 @@
 This is a [Next.js](https://nextjs.org/) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
 
+TODO: 
+- Fill out socketing for the rooms 
+- Add way to timeout rooms
+- Work on creating admin roles and checking the system for sending and checking the signals
+
+- User panel for accounts
+- Way to lock stuff
+- User History
+- Kicking and other admin functions
+- Leaving rooms as an admin
+- designating other admin
+- ui
+
 https://lazard.udemy.com/organization/search/?src=ukw&q=google+auth+nextjs
+
+https://socket.io/how-to/use-with-nextjs
+
 
 ## Getting Started
 
-https://socket.io/how-to/use-with-nextjs
 
 First, run the development server:
 
