@@ -33,13 +33,15 @@ export default async function createRoom() {
       name: `Room ${joinID}`,
       login_code: joinID,
       // the admin should be the user who created the room
-      admin: [ `${user.id}` ],
+      admin: [`${user.id}`],
     });
 
     // save the room to the user's account
-    const userRooms = await User.findOne({ _id: user.id }, "hosted_rooms");
+    const userRecord = await User.findOne({ _id: user.id }, "hosted_rooms");
+    const userRooms = userRecord?.hosted_rooms || [];
     // update the user's rooms
-    await User.updateOne({ _id: user.id }, { rooms: [ ...userRooms, joinID ] });
+    await User.updateOne({ _id: user.id }, { hosted_rooms: [...userRooms, joinID] });
+    console.log("User rooms updated:", userRooms);
 
     newRoom.save();
     console.log("Room created:", joinID);

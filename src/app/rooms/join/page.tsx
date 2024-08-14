@@ -1,12 +1,13 @@
 'use client'
 import socket from "@/socket"
-import { useEffect, useState } from "react"
+import { useEffect, useState, useRef } from "react"
 import connectDB from "@/config/database"
 import { signIn, signOut, useSession, getProviders } from "next-auth/react"
 import Image from "next/image";
 import defaultImg from "/public/default.jpg"
 import Link from "next/link";
 import createRoom from "@/actions/createRoom"
+import getListOfHost from "@/actions/getListOfHost"
 
 
 export default function joinRoom() {
@@ -18,7 +19,7 @@ export default function joinRoom() {
     const [toServer, updateToServer] = useState("");
     const [fromServer, updateFromServer] = useState("");
     const [providers, setProviders] = useState<Record<string, any> | null>(null);
-
+    const [rooms, setRooms] = useState([""]);
     // stuff for creating a room
     const [createdRoom, setCreatedRoom] = useState<null | String>(null);
 
@@ -37,6 +38,37 @@ export default function joinRoom() {
         }
         setAuthProviders()
     }, [])
+    const prevRoomsRef = useRef<string[] | null>();
+    const prevSessionRef = useRef<Session | null>();
+
+    useEffect(() => {
+        const getList = async () => {
+            console.log(`Session ${session}`);
+            if (session) {
+                const list = await getListOfHost();
+                console.log(`Getting list ${list}`);
+                if (list !== null) {
+                    const newRooms = JSON.parse(JSON.stringify(list));
+                    console.log("New Rooms:", newRooms);
+                    console.log("Previous Rooms:", prevRoomsRef.current);
+                    if (JSON.stringify(newRooms) !== JSON.stringify(prevRoomsRef.current)) {
+                        setRooms(newRooms);
+                        console.log("ROOMS", newRooms);
+                    }
+
+                }
+            }
+        };
+
+        if (session !== prevSessionRef.current || JSON.stringify(rooms) !== JSON.stringify(prevRoomsRef.current)) {
+            console.log("SFwfbnjkfbn");
+            getList();
+        }
+
+        prevRoomsRef.current = rooms;
+        prevSessionRef.current = session;
+    }, [rooms, session]);
+
 
     console.log(`Logged Providers: ${providers}`)
 
@@ -102,6 +134,7 @@ export default function joinRoom() {
         }
     }
 
+
     async function joinRoom() {
         // join the room
         console.log("Join Room Button Pressed")
@@ -138,10 +171,13 @@ export default function joinRoom() {
             <p>
                 Time to come back from server: {fromServer} ms
             </p>
+            {session && <p>
+                List of hosted Rooms: {rooms.join(", ")}
+            </p>}
             {createdRoom && <p> Room created is {createdRoom} </p>}
-            {! createdRoom && <p>Room is not created yet</p>}
+            {!createdRoom && <p>Room is not created yet</p>}
             {session && <button onClick={async () => createAndSetRoom()} className="bg-red-500 rounded-md border-spacing-2 p-3 m-3"> create room</button>}
-            {session && createdRoom && <Link href={`/rooms/session/${createdRoom}`} className="m-3 bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"> Join as admin </Link> }
+            {session && createdRoom && <Link href={`/rooms/session/${createdRoom}`} className="m-3 bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"> Join as admin </Link>}
             {session && <input id="fillbox" placeholder="join code" className="text-stone-800	bg-red-300 border-spacing-2 rounded-md p-3" />}
             {session && <button onClick={async () => joinRoom()} className="bg-red-500 rounded-md border-spacing-2 p-3 m-3"> join room</button>}
         </div>
