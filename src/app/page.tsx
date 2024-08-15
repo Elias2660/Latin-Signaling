@@ -1,5 +1,5 @@
 "use client"
-import { useEffect, useState } from "react";
+import { useEffect, useState, use } from "react";
 import connectDB from "@/config/database"
 import { signIn, signOut, useSession, getProviders } from "next-auth/react"
 import Link from "next/link";

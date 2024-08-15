@@ -1,4 +1,4 @@
-import { Schema, model, models } from "mongoose";
+import { Schema, model, models, Document, Model } from "mongoose";
 
 const RoomSchema = new Schema({
   name: {
@@ -24,6 +24,7 @@ const RoomSchema = new Schema({
     default: false,
   }
 });
+
 
 const Room = models.Room || model("Room", RoomSchema);
 export default Room;
