@@ -3,12 +3,12 @@ import socket from "@/socket";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { isAdmin } from "@/actions/adminActions";
-import { getRoomInfo } from "@/actions/RoomActions";
 import removeRoom from "@/actions/removeRoom";
 import redirectIfNotValid from "@/actions/redirectIfNotValid";
 import { signIn, signOut, useSession, getProviders } from "next-auth/react"
 import LoadingSpinner from "@/components/LoadingSpinner";
 import getSessionUser from "@/utils/getServerSession";
+import { clientRedirect } from "@/actions/ClientRedirect";
 
 interface RoomPageProps {
     params: {
@@ -18,15 +18,20 @@ interface RoomPageProps {
 }
 
 interface SessionUserProps {
-    user: string,
     id: string,
+    user: {
+        email: string,
+        id: string,
+        image: string,
+        name: string
+    }
 }
 
 export default function RoomPage(props: RoomPageProps) {
     const { data: session } = useSession();
     const [userStatus, updateUserStatus] = useState(false);
     const [checkForRedirect, setCheckForRedirect] = useState(false);
-    const [user, updateUser] = useState<SessionUserProps | null>()
+    const [userData, updateUserData] = useState<SessionUserProps | null>()
     // redirect the user if the room does not exist
     useEffect(() => {
         (async () => {
@@ -53,27 +58,27 @@ export default function RoomPage(props: RoomPageProps) {
     useEffect(() => {
         const getAdminStatus = async () => {
             if (props.params.roomid !== null || props.params.roomid !== undefined) {
-
                 console.log(`Getting Admin Status for room ${props.params.roomid}`);
                 const status = await isAdmin(props.params.roomid);
+                console.log(`status ${status}`)
                 updateUserStatus(status);
             }
         }
         getAdminStatus();
-    }, []);
+    }, [session]);
 
     useEffect(() => {
         const getUser = async () => {
             console.log(`Get user`);
             if (session !== undefined && session !== null) {
-                const user = await getSessionUser();
-                if (user !== null) {
-                    updateUser(user);
+                const foundUserData = await getSessionUser();
+                if (foundUserData !== null) {
+                    updateUserData(foundUserData);
                 }
             }
         }
         getUser();
-    }, []);
+    }, [session]);
 
     async function leaveRoom(roomid: string) {
         console.log("Leave Room Triggered");
@@ -85,15 +90,16 @@ export default function RoomPage(props: RoomPageProps) {
     }
 
     return (<div className="h-full w-full m-3">
-        {/* {!checkForRedirect && <LoadingSpinner />} */}
+        {!checkForRedirect && <LoadingSpinner />}
         {checkForRedirect && <><Link href="/rooms/join" className="m-3 bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
             Go back to joined room
         </Link>
-            <p className="m-3">Current Session user {user?.id}. User Admin: {userStatus}</p>
+            <p className="m-3">Current Session user {userData?.user.name}.</p>
+            <p className="m-3"> User is Admin: {(userStatus.toString())}</p>
             <p className="m-3">You are in room {props.params.roomid}</p>
-            <button onClick={async () => leaveRoom(props.params.roomid)} className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded m-3">
+            <Link href="/rooms/join" className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded m-3">
                 Leave Room
-            </button>
+            </Link>
 
             <button onClick={async () => closeRoom(props.params.roomid)} className="bg-red-500 hover:bg-red-900 text-white font-bold py-2 px-4 rounded m-3">
                 close Room
