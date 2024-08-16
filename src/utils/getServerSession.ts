@@ -1,3 +1,4 @@
+"use server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/utils/authOptions";
 
@@ -7,7 +8,7 @@ export default async function getSessionUser() {
       return null;
     }
     return {
-      user: session.user,
-      id: session.user.id,
+      user: (session.user as string),
+      id: (session.user.id as string),
     };
 }

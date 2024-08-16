@@ -1,7 +1,8 @@
+"use server";
 import Room from "@/models/Room";
 
 
-export async function getRoomInfo(roomID: string) {
+export async function getRoomInfo(roomID: string): Promise<typeof Room | null> {
   try {
     const room = await Room.findOne({login_code: roomID});
     if (room === null || room === undefined) {
