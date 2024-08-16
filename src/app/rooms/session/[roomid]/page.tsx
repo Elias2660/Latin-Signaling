@@ -85,7 +85,7 @@ export default function RoomPage(props: RoomPageProps) {
     }
 
     return (<div className="h-full w-full m-3">
-        {!checkForRedirect && <LoadingSpinner />}
+        {/* {!checkForRedirect && <LoadingSpinner />} */}
         {checkForRedirect && <><Link href="/rooms/join" className="m-3 bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
             Go back to joined room
         </Link>
