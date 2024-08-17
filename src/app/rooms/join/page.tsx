@@ -97,8 +97,6 @@ export default function joinRoom() {
             updateFromServer((Date.now() - fromServer).toString());
         }
 
-        // create way to create rooms
-
         socket.on("connect", onConnect);
         socket.on("disconnect", onDisconnect);
         socket.on("ping", onPing);
@@ -146,7 +144,6 @@ export default function joinRoom() {
         checkFillboxForValidity()
     }, [(typeof window !== 'undefined' && (document.getElementById("fillbox") as HTMLInputElement)?.value)]);
 
-
     let profileImage = session?.user?.image;
 
     return (<main className="m-3">
@@ -156,7 +153,7 @@ export default function joinRoom() {
         }
         <Link href="/" className="text-gray-900 bg-white border border-gray-300 focus:outline-none hover:bg-gray-100 focus:ring-4 focus:ring-gray-100 font-medium rounded-lg text-sm px-5 py-2.5 me-2 mb-2 dark:bg-gray-800 dark:text-white dark:border-gray-600 dark:hover:bg-gray-700 dark:hover:border-gray-600 dark:focus:ring-gray-700">Back to Main Page</Link>
 
-        {!session && providers && Object.values(providers).map((provider, index) => {
+        {providers && Object.values(providers).map((provider, index) => {
             return (
                 <button type="button"
                     key={index}

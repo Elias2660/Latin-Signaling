@@ -2,7 +2,7 @@
 import socket from "@/socket";
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { isAdmin } from "@/actions/adminActions";
+import { isRoomAdmin } from "@/actions/adminActions";
 import removeRoom from "@/actions/removeRoom";
 import redirectIfNotValid from "@/actions/redirectIfNotValid";
 import { signIn, signOut, useSession, getProviders } from "next-auth/react"
@@ -59,7 +59,7 @@ export default function RoomPage(props: RoomPageProps) {
         const getAdminStatus = async () => {
             if (props.params.roomid !== null || props.params.roomid !== undefined) {
                 console.log(`Getting Admin Status for room ${props.params.roomid}`);
-                const status = await isAdmin(props.params.roomid);
+                const status = await isRoomAdmin(props.params.roomid);
                 console.log(`status ${status}`)
                 updateUserStatus(status);
             }

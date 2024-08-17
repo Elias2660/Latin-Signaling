@@ -1,10 +1,10 @@
 "use server";
 import connectDB from "@/config/database";
-import User from "@/models/User";
 import Room from "@/models/Room";
+import User from "@/models/User";
 import getSessionUser from "@/utils/getServerSession";
 
-export async function isAdmin(roomID: string): Promise<boolean> {
+export async function isRoomAdmin(roomID: string): Promise<boolean> {
   // given a room id and user id, check if the user is an admin of the room
   try {
     await connectDB();
@@ -25,6 +25,43 @@ export async function isAdmin(roomID: string): Promise<boolean> {
   return false;
 }
 
-export async function addAdmin(roomID: string, adminData: string[]) {
+export async function isAdmin(): Promise<boolean> {
+  // given a user id, check if the user is an admin
+  try {
+    await connectDB();
+    const user = await getSessionUser();
+    if (user === null) {
+      console.error("User not found");
+      return false;
+    }
+    const isAdmin = await User.findOne({ _id: user.id, admin: true });
+    if (!isAdmin) {
+      console.error("User is not an admin");
+    }
+    return isAdmin;
+  } catch (error) {
+    console.error("Error checking if user is admin:", error);
+  }
+  return false;
+}
+
+export async function addAdmintoRoom(roomID: string, adminData: string[]) {
   // given a room id, add the specific user as admin to the room
+}
+
+
+export async function makeAdmin(userID: string) {
+  // given a user id, make the user an admin
+  try {
+    await connectDB();
+    const user = await User.findOne({ _id: userID });
+    if (user === null) {
+      console.error("User not found");
+      return false;
+    }
+    user.admin = true;
+    await user.save();
+  } catch (error) {
+    console.error("Error making user admin:", error);
+  }
 }

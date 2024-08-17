@@ -1,5 +1,5 @@
 "use client"
-import { useEffect, useState, use } from "react";
+import { useEffect, useState } from "react";
 import connectDB from "@/config/database"
 import { signIn, signOut, useSession, getProviders } from "next-auth/react"
 import Link from "next/link";
@@ -27,7 +27,7 @@ export default function Home() {
   return (
     <main className="m-3">
 
-      {!session && providers && Object.values(providers).map((provider, index) => {
+      {providers && Object.values(providers).map((provider, index) => {
         return (
           <button type="button"
             key={index}
