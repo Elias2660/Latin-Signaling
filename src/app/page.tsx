@@ -27,7 +27,7 @@ export default function Home() {
   return (
     <main className="m-3">
 
-      {providers && Object.values(providers).map((provider, index) => {
+      {!session && providers && Object.values(providers).map((provider, index) => {
         return (
           <button type="button"
             key={index}

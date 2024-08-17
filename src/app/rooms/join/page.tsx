@@ -44,30 +44,33 @@ export default function joinRoom() {
     const prevRoomsRef = useRef<string[] | null>();
     const prevSessionRef = useRef<Session | null>();
 
-    useEffect(() => {
-        const getList = async () => {
-            console.log(`Session ${session}`);
-            if (session) {
-                const list = await getListOfHost();
-                console.log(`Getting list ${list}`);
-                if (list !== null) {
-                    const newRooms = JSON.parse(JSON.stringify(list));
-                    console.log("New Rooms:", newRooms);
-                    console.log("Previous Rooms:", prevRoomsRef.current);
-                    if (JSON.stringify(newRooms) !== JSON.stringify(prevRoomsRef.current)) {
-                        setRooms(newRooms);
-                        console.log("ROOMS", newRooms);
-                    }
 
+    const getList = async () => {
+        console.log(`Session ${session}`);
+        if (session) {
+            const list = await getListOfHost();
+            console.log(`Getting list ${list}`);
+            if (list !== null) {
+                const newRooms = JSON.parse(JSON.stringify(list));
+                console.log("New Rooms:", newRooms);
+                console.log("Previous Rooms:", prevRoomsRef.current);
+                if (JSON.stringify(newRooms) !== JSON.stringify(prevRoomsRef.current)) {
+                    setRooms(newRooms);
+                    console.log("ROOMS", newRooms);
                 }
+
             }
-        };
+        }
+    };
+
+
+    useEffect(() => {
         if (session !== prevSessionRef.current || JSON.stringify(rooms) !== JSON.stringify(prevRoomsRef.current)) {
             getList();
         }
         prevRoomsRef.current = rooms;
         prevSessionRef.current = session;
-    }, [rooms, session]);
+    }, [rooms, session, prevRoomsRef, prevSessionRef]);
 
 
     console.log(`Logged Providers: ${providers}`)
@@ -114,7 +117,6 @@ export default function joinRoom() {
         const timeout = setInterval(() => {
             if (socket.connected) {
                 socket.emit("timecheck", Date.now());
-                // console.log("Checking the ping");
             } else {
                 updateToServer("-");
                 updateFromServer("-");
@@ -130,6 +132,7 @@ export default function joinRoom() {
         if (typeof response === 'string') {
             setCreatedRoom(response);
         }
+        await getList()
     }
 
     useEffect(() => {
@@ -153,7 +156,7 @@ export default function joinRoom() {
         }
         <Link href="/" className="text-gray-900 bg-white border border-gray-300 focus:outline-none hover:bg-gray-100 focus:ring-4 focus:ring-gray-100 font-medium rounded-lg text-sm px-5 py-2.5 me-2 mb-2 dark:bg-gray-800 dark:text-white dark:border-gray-600 dark:hover:bg-gray-700 dark:hover:border-gray-600 dark:focus:ring-gray-700">Back to Main Page</Link>
 
-        {providers && Object.values(providers).map((provider, index) => {
+        {!session && providers && Object.values(providers).map((provider, index) => {
             return (
                 <button type="button"
                     key={index}
@@ -183,8 +186,8 @@ export default function joinRoom() {
             {session && <button onClick={async () => createAndSetRoom()} className="bg-red-500 rounded-md border-spacing-2 p-3 m-3"> create room</button>}
             {session && createdRoom && <Link href={`/rooms/session/${createdRoom}`} className="m-3 bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"> Join as admin </Link>}
             {session && <input id="fillbox" placeholder="join code" className="text-stone-800	bg-red-300 border-spacing-2 rounded-md p-3" />}
-            {session && !fillboxValidRoom && <div className="bg-red-400 rounded-md border-spacing-2 p-3 m-3 w-24 inline"> join room</div>}
-            {session && fillboxValidRoom && <Link href={`/rooms/session/${(document.getElementById("fillbox") as HTMLInputElement).value.trim()}`} className="bg-red-800 rounded-md border-spacing-2 p-3 m-3 w-24"> join room</Link>}
+            {session && !fillboxValidRoom && <div className="bg-red-400 select-none rounded-md border-spacing-2 p-3 m-3 w-24 inline"> join room</div>}
+            {session && fillboxValidRoom && <Link href={`/rooms/session/${(document.getElementById("fillbox") as HTMLInputElement).value.trim()}`} className="bg-red-800 rounded-md border-spacing-2 p-3 m-3 w-24 hover:bg-red-400  hover:scale-110"> join room</Link>}
         </div>
     </main>)
 }
