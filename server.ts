@@ -54,10 +54,10 @@ app.prepare().then(() => {
       socket.to(user).emit("kicked");
     });
 
-    socket.on("resetBuzzers", (roomID: string) => {
+    socket.on("resetBuzzers", (roomID) => {
       // resets the list
-      console.log(`🔄 ${socket.id.substring(0, 2)} resetting`);
-      socket.to(roomID).emit("reset");
+      console.log(`🔄 ${socket.id.substring(0, 2)} resetting to room ${roomID}`);
+      socket.broadcast.to(roomID).emit("reset");
     });
   });
 

@@ -32,6 +32,7 @@ export default function RoomPage(props: RoomPageProps) {
     const [checkForRedirect, setCheckForRedirect] = useState(false);
     const [userData, updateUserData] = useState<SessionUserProps | null>()
     const [ringed, updateRinged] = useState(false)
+    const [pings, updatePings] = useState<number[]>([])
     // redirect the user if the room does not exist
     useEffect(() => {
         (async () => {
@@ -47,17 +48,26 @@ export default function RoomPage(props: RoomPageProps) {
 
         function onConnect() {
             console.log(`Connected to ${props.params.roomid}`);
-            socket.emit("joinRoom", props.params.roomid)
+            socket.emit("joinRoom", props.params.roomid);
+            // console.log(`Current Room: ${socket.id}`)
         }
         function onResetRing() {
             console.log("reset recived")
             updateRinged(true);
         }
 
+        function onBuzz(timestamp: number) {
+            if (userStatus) {
+                updatePings([...pings, timestamp])
+            }
+        }
+
         socket.on("connect", onConnect);
         socket.on("resetBuzzers", onResetRing);
+        socket.on("buzz", onBuzz);
         return () => {
             socket.off("connect", onConnect);
+            socket.off("buzz", onBuzz);
             socket.off("resetBuzzers", onResetRing);
             socket.emit("leaveRoom", props.params.roomid);
         }
@@ -114,6 +124,19 @@ export default function RoomPage(props: RoomPageProps) {
             <p className="m-3">Current Session user {userData?.user.name}.</p>
             <p className="m-3"> User is Admin: {(userStatus.toString())}</p>
             <p className="m-3">You are in room {props.params.roomid}</p>
+
+            {userStatus &&
+                <> <p className="m-3"> Total Pings </p>
+                    <ul>
+
+                    </ul>
+                </>
+            }
+            <p className="m-3"> Users in rooms </p>
+            <ul className="m-3"> 
+                <li> ~test item~ </li>
+            </ul>
+
             <Link href="/rooms/join" className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded m-3">
                 Leave Room
             </Link>
