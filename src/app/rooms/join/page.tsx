@@ -10,8 +10,6 @@ import Link from "next/link";
 import createRoom from "@/actions/createRoom";
 import getListOfHost from "@/actions/getListOfHost";
 import { isRoom } from "@/actions/RoomActions";
-import { clientRedirect } from "@/actions/ClientRedirect"
-
 
 export default function joinRoom() {
     const { data: session } = useSession();
@@ -23,6 +21,7 @@ export default function joinRoom() {
     const [providers, setProviders] = useState<Record<string, any> | null>(null);
     const [rooms, setRooms] = useState([""]);
     const [fillboxValidRoom, setFillboxRoomValidity] = useState(false);
+
     // stuff for creating a room
     const [createdRoom, setCreatedRoom] = useState<null | String>(null);
 
@@ -111,8 +110,6 @@ export default function joinRoom() {
         };
     }, []);
 
-
-
     useEffect(() => {
         const timeout = setInterval(() => {
             if (socket.connected) {
@@ -168,7 +165,7 @@ export default function joinRoom() {
 
             <Image className="rounded-full" src={profileImage || defaultImg} width={160} height={160} alt="profile pic" priority={false} />
 
-            <p> User is {!session && "not"} logged in </p>
+            <p>User is {!session && "not"} logged in </p>
             <p>Status: {isConnected ? "connected" : "disconnected"}</p>
             <p>Transport: {transport}</p>
             <p>

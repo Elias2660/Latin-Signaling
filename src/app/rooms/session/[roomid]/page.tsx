@@ -8,7 +8,6 @@ import redirectIfNotValid from "@/actions/redirectIfNotValid";
 import { signIn, signOut, useSession, getProviders } from "next-auth/react"
 import LoadingSpinner from "@/components/LoadingSpinner";
 import getSessionUser from "@/utils/getServerSession";
-import { clientRedirect } from "@/actions/ClientRedirect";
 
 interface RoomPageProps {
     params: {
@@ -32,6 +31,7 @@ export default function RoomPage(props: RoomPageProps) {
     const [userStatus, updateUserStatus] = useState(false);
     const [checkForRedirect, setCheckForRedirect] = useState(false);
     const [userData, updateUserData] = useState<SessionUserProps | null>()
+    const [ringed, updateRinged] = useState(false)
     // redirect the user if the room does not exist
     useEffect(() => {
         (async () => {
@@ -47,11 +47,19 @@ export default function RoomPage(props: RoomPageProps) {
 
         function onConnect() {
             console.log(`Connected to ${props.params.roomid}`);
+            socket.emit("joinRoom", props.params.roomid)
+        }
+        function onResetRing() {
+            console.log("reset recived")
+            updateRinged(true);
         }
 
         socket.on("connect", onConnect);
+        socket.on("resetBuzzers", onResetRing);
         return () => {
             socket.off("connect", onConnect);
+            socket.off("resetBuzzers", onResetRing);
+            socket.emit("leaveRoom", props.params.roomid);
         }
     }, [])
 
@@ -80,13 +88,22 @@ export default function RoomPage(props: RoomPageProps) {
         getUser();
     }, [session]);
 
-    async function leaveRoom(roomid: string) {
-        console.log("Leave Room Triggered");
-    }
 
     async function closeRoom(roomid: string) {
         console.log("Close Room Triggered")
         await removeRoom(roomid);
+    }
+
+    async function sendBuzz() {
+        if (!ringed) {
+            const timeStamp = Date.now();
+            socket.emit("buzz", timeStamp, props.params.roomid);
+            updateRinged(true);
+        }
+    }
+
+    async function sendReset() {
+        socket.emit("resetBuzzers", props.params.roomid);
     }
 
     return (<div className="h-full w-full m-3">
@@ -103,6 +120,9 @@ export default function RoomPage(props: RoomPageProps) {
 
             <button onClick={async () => closeRoom(props.params.roomid)} className="bg-red-500 hover:bg-red-900 text-white font-bold py-2 px-4 rounded m-3">
                 close Room
-            </button></>}
+            </button>
+            {!userStatus && <button onClick={async () => sendBuzz()} className={`${!ringed && "bg-teal-600"} ${ringed && "bg-teal-900"} hover:bg-teal-900 text-white font-bold py-2 px-4 rounded m-3`}> Send Ping to Admin </button>}
+            {userStatus && <button onClick={async () => sendReset()} className={`${!ringed && "bg-teal-600"} ${ringed && "bg-teal-900"} hover:bg-teal-900 text-white font-bold py-2 px-4 rounded m-3`}> Reset </button>}
+        </>}
     </div>);
 }

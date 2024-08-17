@@ -25,11 +25,6 @@ app.prepare().then(() => {
       socket.broadcast.emit("create", message);
     });
 
-    socket.on("clear", () => {
-      console.log(`🗑️ ${socket.id.substring(0, 2)} clearing list`);
-      socket.broadcast.emit("clear");
-    });
-
     socket.on("timecheck", (time: number) => {
       // console.log(`🏓 ping from user ${socket.id.substring(0,2)}`);
       let t = Date.now() - time;
@@ -37,10 +32,16 @@ app.prepare().then(() => {
     });
 
     socket.on("joinRoom", (room: string) => {
-
-      // joins the room, but doesn't determine if the room actually exists
       console.log(`🚪 ${socket.id.substring(0, 2)} joining room ${room}`);
       socket.join(room);
+    });
+
+    socket.on("buzz", (time: number, room: string) => {
+      console.log(`🔔 ${socket.id.substring(0, 2)} buzzing in room ${room}`);
+      // sends the buzz to the room but only if the socket is in the room
+      if (socket.rooms.has(room)) {
+        io.to(room).emit("buzz", time);
+      }
     });
 
     socket.on("leaveRoom", (room: string) => {
@@ -53,10 +54,10 @@ app.prepare().then(() => {
       socket.to(user).emit("kicked");
     });
 
-    socket.on("reset", () => {
+    socket.on("resetBuzzers", (roomID: string) => {
       // resets the list
       console.log(`🔄 ${socket.id.substring(0, 2)} resetting`);
-      socket.broadcast.emit("reset");
+      socket.to(roomID).emit("reset");
     });
   });
 
