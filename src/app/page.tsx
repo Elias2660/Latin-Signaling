@@ -6,8 +6,6 @@ import Link from "next/link";
 
 export default function Home() {
   const { data: session } = useSession();
-  console.log(session)
-
   const [providers, setProviders] = useState<Record<string, any> | null>(null);
 
   useEffect(() => {
@@ -24,7 +22,7 @@ export default function Home() {
       setProviders(res);
     }
     setAuthProviders()
-  }, [])
+  }, [session])
 
   return (
     <main className="m-3">

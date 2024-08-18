@@ -22,11 +22,21 @@ export default async function removeRoom(roomid: string) {
         console.error("User not found");
         return false;
       }
-      let userRooms = await User.findOne({ _id: user.id }, "rooms");
+
+      const userRecord = await User.findOne({ _id: user.id }, "hosted_rooms");
+      console.log(`userRecord: ${userRecord}`);
+      const userRooms = userRecord?.rooms || [];
+      console.log(`userRooms: ${userRooms}`);
+      if (!Array.isArray(userRooms)) {
+        console.log("User rooms is not an array!!");
+        return false;
+      }
       await User.updateOne(
         { _id: user.id },
-        { rooms: userRooms.filter((r: string) => r !== roomid) }
+        { hosted_rooms: userRooms.filter((r: string) => r !== roomid) }
       );
+      const updatedUser = await User.findOne({ _id: user.id }); 
+      console.log("User after updating rooms:", updatedUser);
     }
   } catch (error) {
     console.error("Error removing room:", error);

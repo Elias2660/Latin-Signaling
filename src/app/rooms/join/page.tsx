@@ -7,13 +7,12 @@ import { signIn, signOut, useSession, getProviders } from "next-auth/react"
 import Image from "next/image";
 import defaultImg from "/public/default.jpg"
 import Link from "next/link";
-import createRoom from "@/actions/createRoom"
-import getListOfHost from "@/actions/getListOfHost"
-
+import createRoom from "@/actions/createRoom";
+import getListOfHost from "@/actions/getListOfHost";
+import { isRoom } from "@/actions/RoomActions";
 
 export default function joinRoom() {
     const { data: session } = useSession();
-    console.log(session)
 
     const [isConnected, setIsConnected] = useState(false);
     const [transport, setTransport] = useState("N/A");
@@ -21,6 +20,8 @@ export default function joinRoom() {
     const [fromServer, updateFromServer] = useState("");
     const [providers, setProviders] = useState<Record<string, any> | null>(null);
     const [rooms, setRooms] = useState([""]);
+    const [fillboxValidRoom, setFillboxRoomValidity] = useState(false);
+
     // stuff for creating a room
     const [createdRoom, setCreatedRoom] = useState<null | String>(null);
 
@@ -38,37 +39,37 @@ export default function joinRoom() {
             setProviders(res);
         }
         setAuthProviders()
-    }, [])
+    }, [session])
     const prevRoomsRef = useRef<string[] | null>();
     const prevSessionRef = useRef<Session | null>();
 
-    useEffect(() => {
-        const getList = async () => {
-            console.log(`Session ${session}`);
-            if (session) {
-                const list = await getListOfHost();
-                console.log(`Getting list ${list}`);
-                if (list !== null) {
-                    const newRooms = JSON.parse(JSON.stringify(list));
-                    console.log("New Rooms:", newRooms);
-                    console.log("Previous Rooms:", prevRoomsRef.current);
-                    if (JSON.stringify(newRooms) !== JSON.stringify(prevRoomsRef.current)) {
-                        setRooms(newRooms);
-                        console.log("ROOMS", newRooms);
-                    }
 
+    const getList = async () => {
+        console.log(`Session ${session}`);
+        if (session) {
+            const list = await getListOfHost();
+            console.log(`Getting list ${list}`);
+            if (list !== null) {
+                const newRooms = JSON.parse(JSON.stringify(list));
+                console.log("New Rooms:", newRooms);
+                console.log("Previous Rooms:", prevRoomsRef.current);
+                if (JSON.stringify(newRooms) !== JSON.stringify(prevRoomsRef.current)) {
+                    setRooms(newRooms);
+                    console.log("ROOMS", newRooms);
                 }
-            }
-        };
 
+            }
+        }
+    };
+
+
+    useEffect(() => {
         if (session !== prevSessionRef.current || JSON.stringify(rooms) !== JSON.stringify(prevRoomsRef.current)) {
-            console.log("SFwfbnjkfbn");
             getList();
         }
-
         prevRoomsRef.current = rooms;
         prevSessionRef.current = session;
-    }, [rooms, session]);
+    }, [rooms, session, prevRoomsRef, prevSessionRef]);
 
 
     console.log(`Logged Providers: ${providers}`)
@@ -98,8 +99,6 @@ export default function joinRoom() {
             updateFromServer((Date.now() - fromServer).toString());
         }
 
-        // create way to create rooms
-
         socket.on("connect", onConnect);
         socket.on("disconnect", onDisconnect);
         socket.on("ping", onPing);
@@ -111,21 +110,17 @@ export default function joinRoom() {
         };
     }, []);
 
-
-
     useEffect(() => {
         const timeout = setInterval(() => {
             if (socket.connected) {
                 socket.emit("timecheck", Date.now());
-                // console.log("Checking the ping");
             } else {
                 updateToServer("-");
-                updateFromServer("-")
+                updateFromServer("-");
             }
         }, 1000);
         return () => clearTimeout(timeout);
     }, []);
-    
 
 
     async function createAndSetRoom() {
@@ -134,15 +129,22 @@ export default function joinRoom() {
         if (typeof response === 'string') {
             setCreatedRoom(response);
         }
+        await getList()
     }
 
+    useEffect(() => {
+        const checkFillboxForValidity = async () => {
 
-    async function joinRoom() {
-        // join the room
-        console.log("Join Room Button Pressed")
-    }
+            const enteredRoomCode: string = (document.getElementById("fillbox") as HTMLInputElement)?.value;
+            if (enteredRoomCode !== null && enteredRoomCode !== undefined && enteredRoomCode.length > 0) {
+                const validRoom = await isRoom(enteredRoomCode);
+                setFillboxRoomValidity(validRoom);
+            }
+        }
+        checkFillboxForValidity()
+    }, [(typeof window !== 'undefined' && (document.getElementById("fillbox") as HTMLInputElement)?.value)]);
 
-    let profileImage = session?.user?.image
+    let profileImage = session?.user?.image;
 
     return (<main className="m-3">
         {session && <button type="button"
@@ -163,7 +165,7 @@ export default function joinRoom() {
 
             <Image className="rounded-full" src={profileImage || defaultImg} width={160} height={160} alt="profile pic" priority={false} />
 
-            <p> User is {!session && "not"} logged in </p>
+            <p>User is {!session && "not"} logged in </p>
             <p>Status: {isConnected ? "connected" : "disconnected"}</p>
             <p>Transport: {transport}</p>
             <p>
@@ -181,7 +183,8 @@ export default function joinRoom() {
             {session && <button onClick={async () => createAndSetRoom()} className="bg-red-500 rounded-md border-spacing-2 p-3 m-3"> create room</button>}
             {session && createdRoom && <Link href={`/rooms/session/${createdRoom}`} className="m-3 bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"> Join as admin </Link>}
             {session && <input id="fillbox" placeholder="join code" className="text-stone-800	bg-red-300 border-spacing-2 rounded-md p-3" />}
-            {session && <button onClick={async () => joinRoom()} className="bg-red-500 rounded-md border-spacing-2 p-3 m-3"> join room</button>}
+            {session && !fillboxValidRoom && <div className="bg-red-400 select-none rounded-md border-spacing-2 p-3 m-3 w-24 inline"> join room</div>}
+            {session && fillboxValidRoom && <Link href={`/rooms/session/${(document.getElementById("fillbox") as HTMLInputElement).value.trim()}`} className="bg-red-800 rounded-md border-spacing-2 p-3 m-3 w-24 hover:bg-red-400  hover:scale-110"> join room</Link>}
         </div>
     </main>)
 }
