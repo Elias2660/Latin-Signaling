@@ -8,6 +8,7 @@ import redirectIfNotValid from "@/actions/redirectIfNotValid";
 import { signIn, signOut, useSession, getProviders } from "next-auth/react"
 import LoadingSpinner from "@/components/LoadingSpinner";
 import getSessionUser from "@/utils/getServerSession";
+import { update } from "lodash";
 
 interface RoomPageProps {
     params: {
@@ -42,48 +43,53 @@ export default function RoomPage(props: RoomPageProps) {
     }, []);
 
     useEffect(() => {
-        if (socket.connected) {
-            onConnect();
-        }
-
-        function onConnect() {
-            console.log(`Connected to ${props.params.roomid}`);
-            socket.emit("joinRoom", props.params.roomid);
-            // console.log(`Current Room: ${socket.id}`)
-        }
-        function onResetRing() {
-            console.log("reset recived")
-            updateRinged(true);
-        }
-
-        function onBuzz(timestamp: number) {
-            if (userStatus) {
-                updatePings([...pings, timestamp])
-            }
-        }
-
-        socket.on("connect", onConnect);
-        socket.on("resetBuzzers", onResetRing);
-        socket.on("buzz", onBuzz);
-        return () => {
-            socket.off("connect", onConnect);
-            socket.off("buzz", onBuzz);
-            socket.off("resetBuzzers", onResetRing);
-            socket.emit("leaveRoom", props.params.roomid);
-        }
-    }, [])
-
-    useEffect(() => {
         const getAdminStatus = async () => {
             if (props.params.roomid !== null || props.params.roomid !== undefined) {
                 console.log(`Getting Admin Status for room ${props.params.roomid}`);
                 const status = await isRoomAdmin(props.params.roomid);
                 console.log(`status ${status}`)
                 updateUserStatus(status);
+                console.log(ringed);
             }
         }
         getAdminStatus();
     }, [session]);
+
+    useEffect(() => {
+
+        const socketActions = async () => {
+            if (socket.connected) {
+                onConnect();
+            }
+
+            function onConnect() {
+                console.log(`Connected to ${props.params.roomid}`);
+                socket.emit("joinRoom", props.params.roomid);
+                // console.log(`Current Room: ${socket.id}`)
+            }
+            function onResetRing() {
+                console.log("reset recived");
+                updateRinged(false);
+                updatePings([]);
+            }
+
+            function onBuzz(timestamp: number) {
+                console.log(`ping gotten ${userStatus}`);
+                console.log("Ping recieved")
+                updatePings([...pings, timestamp])
+            }
+
+            socket.on("connect", onConnect);
+            socket.on("resetBuzzers", onResetRing);
+            socket.on("buzz", onBuzz);
+            return () => {
+                socket.off("connect", onConnect);
+                socket.off("buzz", onBuzz);
+                socket.off("resetBuzzers", onResetRing);
+            }
+        }
+        socketActions();
+    }, [])
 
     useEffect(() => {
         const getUser = async () => {
@@ -105,15 +111,21 @@ export default function RoomPage(props: RoomPageProps) {
     }
 
     async function sendBuzz() {
+        console.log(`Sendbuzz pressed, ringed ${ringed}`);
         if (!ringed) {
+            console.log("buzz sending");
             const timeStamp = Date.now();
             socket.emit("buzz", timeStamp, props.params.roomid);
             updateRinged(true);
         }
+        console.log(`Buzz sent`);
     }
 
     async function sendReset() {
+        console.log("sending reset");
         socket.emit("resetBuzzers", props.params.roomid);
+        updatePings([]);
+        console.log("reset sent");
     }
 
     return (<div className="h-full w-full m-3">
@@ -128,12 +140,14 @@ export default function RoomPage(props: RoomPageProps) {
             {userStatus &&
                 <> <p className="m-3"> Total Pings </p>
                     <ul>
-
+                        {pings.map((ping, index) => (
+                            <li key={index}>{ping}</li>
+                        ))}
                     </ul>
                 </>
             }
             <p className="m-3"> Users in rooms </p>
-            <ul className="m-3"> 
+            <ul className="m-3">
                 <li> ~test item~ </li>
             </ul>
 
@@ -141,9 +155,9 @@ export default function RoomPage(props: RoomPageProps) {
                 Leave Room
             </Link>
 
-            <button onClick={async () => closeRoom(props.params.roomid)} className="bg-red-500 hover:bg-red-900 text-white font-bold py-2 px-4 rounded m-3">
+            {userStatus && <button onClick={async () => closeRoom(props.params.roomid)} className="bg-red-500 hover:bg-red-900 text-white font-bold py-2 px-4 rounded m-3">
                 close Room
-            </button>
+            </button>}
             {!userStatus && <button onClick={async () => sendBuzz()} className={`${!ringed && "bg-teal-600"} ${ringed && "bg-teal-900"} hover:bg-teal-900 text-white font-bold py-2 px-4 rounded m-3`}> Send Ping to Admin </button>}
             {userStatus && <button onClick={async () => sendReset()} className={`${!ringed && "bg-teal-600"} ${ringed && "bg-teal-900"} hover:bg-teal-900 text-white font-bold py-2 px-4 rounded m-3`}> Reset </button>}
         </>}

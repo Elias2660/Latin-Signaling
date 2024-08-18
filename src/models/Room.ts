@@ -11,6 +11,15 @@ const RoomSchema = new Schema({
     required: [true, "Please provide a login code"],
     unique: [true, "Login code already exists"],
   },
+  members: {
+    type: [Object],
+    // interface Member {
+    //   name: string;
+    //   team: string;
+    //   userStatus: string;
+    // };
+    default: [],
+  },
   teams: {
     type: [String],
     default: [],
@@ -22,9 +31,8 @@ const RoomSchema = new Schema({
   locked: {
     type: Boolean,
     default: false,
-  }
+  },
 });
-
 
 const Room = models.Room || model("Room", RoomSchema);
 export default Room;

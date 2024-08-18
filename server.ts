@@ -34,19 +34,25 @@ app.prepare().then(() => {
     socket.on("joinRoom", (room: string) => {
       console.log(`🚪 ${socket.id.substring(0, 2)} joining room ${room}`);
       socket.join(room);
+      const roomData = io.sockets.adapter.rooms.get(room) || new Set<string>();
+      console.log(`Room data after joining: ${JSON.stringify([...roomData])}`);
     });
 
     socket.on("buzz", (time: number, room: string) => {
       console.log(`🔔 ${socket.id.substring(0, 2)} buzzing in room ${room}`);
+      console.log(`time: ${time}`);
       // sends the buzz to the room but only if the socket is in the room
       if (socket.rooms.has(room)) {
-        io.to(room).emit("buzz", time);
+        console.log("🔔 Buzzing in room");
+        console.log(`Rooms: ${JSON.stringify([...io.sockets.adapter.rooms])}`);
+        socket.to(room).emit("buzz", time);
       }
-    });
-
-    socket.on("leaveRoom", (room: string) => {
-      console.log(`🚪 ${socket.id.substring(0, 2)} leaving room ${room}`);
-      socket.leave(room);
+      console.log(`socket.rooms: ${JSON.stringify([...socket.rooms])}`);
+      console.log(
+        `people in room: ${JSON.stringify([
+          io.sockets.adapter.rooms.get(room),
+        ])}`
+      );
     });
 
     socket.on("kick", (kickingUser: string, user: string) => {
@@ -56,8 +62,10 @@ app.prepare().then(() => {
 
     socket.on("resetBuzzers", (roomID) => {
       // resets the list
-      console.log(`🔄 ${socket.id.substring(0, 2)} resetting to room ${roomID}`);
-      socket.broadcast.to(roomID).emit("reset");
+      console.log(
+        `🔄 ${socket.id.substring(0, 2)} resetting to room ${roomID}`
+      );
+      socket.broadcast.to(roomID).emit("resetBuzzers");
     });
   });
 
