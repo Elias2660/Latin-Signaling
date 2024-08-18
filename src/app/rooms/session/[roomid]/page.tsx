@@ -62,10 +62,13 @@ export default function RoomPage(props: RoomPageProps) {
                 onConnect();
             }
 
-            function onConnect() {
+            async function onConnect() {
                 console.log(`Connected to ${props.params.roomid}`);
-                socket.emit("joinRoom", props.params.roomid);
-                // console.log(`Current Room: ${socket.id}`)
+                let user = null;
+                while (user === null ){
+                    user = await getSessionUser();
+                }
+                socket.emit("joinRoom", props.params.roomid, user.id);
             }
             function onResetRing() {
                 console.log("reset recived");

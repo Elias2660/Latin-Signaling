@@ -1,6 +1,8 @@
 import { createServer } from "node:http";
 import next from "next";
 import { Server } from "socket.io";
+import { addRoomMember } from "@/actions/RoomActions";
+import { isRoomAdmin } from "@/actions/adminActions";
 
 const dev = process.env.NODE_ENV !== "production";
 const hostname = "localhost";
@@ -31,11 +33,16 @@ app.prepare().then(() => {
       socket.emit("ping", t, Date.now()); // the time to get from client to the server, the time to get from server to the client
     });
 
-    socket.on("joinRoom", (room: string) => {
+    socket.on("joinRoom", async (room: string, id: string) => {
       console.log(`🚪 ${socket.id.substring(0, 2)} joining room ${room}`);
       socket.join(room);
-      const roomData = io.sockets.adapter.rooms.get(room) || new Set<string>();
-      console.log(`Room data after joining: ${JSON.stringify([...roomData])}`);
+      const isAdmin = await isRoomAdmin(room);
+      await addRoomMember(
+        room,
+        id,
+        isAdmin ? "admin" : "participant",
+        isAdmin ? "moderator" : "none"
+      );
     });
 
     socket.on("buzz", (time: number, room: string) => {

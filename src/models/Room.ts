@@ -1,4 +1,5 @@
 import { Schema, model, models, Document, Model } from "mongoose";
+import User from "./User";
 
 const RoomSchema = new Schema({
   name: {
@@ -12,7 +13,7 @@ const RoomSchema = new Schema({
     unique: [true, "Login code already exists"],
   },
   members: {
-    type: [Object],
+    type: [User],
     // interface Member {
     //   name: string;
     //   team: string;

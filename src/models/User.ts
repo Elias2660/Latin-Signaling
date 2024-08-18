@@ -26,6 +26,11 @@ const UserSchema = new Schema({
     type: [String],
     default: [],
   },
+  game_info: {
+    // stores the user's game information
+    type: Object,
+    default: {},
+  },
 });
 
 const User = models.User || model("User", UserSchema);
