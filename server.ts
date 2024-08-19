@@ -1,8 +1,6 @@
 import { createServer } from "node:http";
 import next from "next";
 import { Server } from "socket.io";
-import { addRoomMember } from "@/actions/RoomActions";
-import { isRoomAdmin } from "@/actions/adminActions";
 
 const dev = process.env.NODE_ENV !== "production";
 const hostname = "localhost";
@@ -20,7 +18,7 @@ app.prepare().then(() => {
     },
   });
 
-  io.on("connection", async (socket) => {
+  io.on("connection", (socket) => {
     console.log(`👋 a user ${socket.id.substring(0, 2)} connected`);
     socket.on("message", (message: string) => {
       console.log(`💬 ${socket.id.substring(0, 2)} message: ${message}`);
@@ -33,26 +31,21 @@ app.prepare().then(() => {
       socket.emit("ping", t, Date.now()); // the time to get from client to the server, the time to get from server to the client
     });
 
-    socket.on("joinRoom", async (room: string, id: string) => {
+    socket.on("joinRoom", (room: string, id: string) => {
       console.log(`🚪 ${socket.id.substring(0, 2)} joining room ${room}`);
       socket.join(room);
-      const isAdmin = await isRoomAdmin(room);
-      await addRoomMember(
-        room,
-        id,
-        isAdmin ? "admin" : "participant",
-        isAdmin ? "moderator" : "none"
-      );
+      socket.to(room).emit("joinedRoom", id);
     });
 
-    socket.on("buzz", (time: number, room: string) => {
+    socket.on("buzz", (time: number, room: string, userID: string) => {
       console.log(`🔔 ${socket.id.substring(0, 2)} buzzing in room ${room}`);
+      console.log(`User: ${userID}`);
       console.log(`time: ${time}`);
       // sends the buzz to the room but only if the socket is in the room
       if (socket.rooms.has(room)) {
         console.log("🔔 Buzzing in room");
         console.log(`Rooms: ${JSON.stringify([...io.sockets.adapter.rooms])}`);
-        socket.to(room).emit("buzz", time);
+        socket.to(room).emit("buzz", time, userID);
       }
       console.log(`socket.rooms: ${JSON.stringify([...socket.rooms])}`);
       console.log(

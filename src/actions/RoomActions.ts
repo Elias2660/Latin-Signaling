@@ -52,28 +52,13 @@ interface GameInfo {
   currentRoom: string;
 }
 
-export async function addRoomMember(roomID: string) {
+export async function addRoomMember(roomID: string, userID: string) {
   // add a user member to a room
   try {
     await connectDB();
     const room = await Room.findOne({ login_code: roomID });
-    const userInfo = await getSessionUser();
     const adminOfRoom = await isRoomAdmin(roomID);
-    if (room === null || room === undefined) {
-      console.error("Room not found");
-      return false;
-    }
-    if (userInfo === null || userInfo === undefined) {
-      console.error("User not found");
-      return false;
-    }
-    if (userInfo === null || userInfo === undefined) {
-      console.error("User not found");
-      return false;
-    }
-
-    const user = await User.findOne({ _id: userInfo.id });
-
+    const user = await User.findOne({ _id: userID });
     if (room === null || room === undefined) {
       console.error("Room not found");
       return false;

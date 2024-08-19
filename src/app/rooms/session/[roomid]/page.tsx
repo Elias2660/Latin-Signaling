@@ -2,13 +2,16 @@
 import socket from "@/socket";
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { isRoomAdmin } from "@/actions/adminActions";
+import { clearGameInfo, isRoomAdmin } from "@/actions/adminActions";
 import removeRoom from "@/actions/removeRoom";
 import redirectIfNotValid from "@/actions/redirectIfNotValid";
 import { signIn, signOut, useSession, getProviders } from "next-auth/react"
 import LoadingSpinner from "@/components/LoadingSpinner";
 import getSessionUser from "@/utils/getServerSession";
 import { update } from "lodash";
+import { getUser } from "@/actions/UserActions";
+import { join } from "path";
+import { addRoomMember } from "@/actions/RoomActions";
 
 interface RoomPageProps {
     params: {
@@ -27,13 +30,19 @@ interface SessionUserProps {
     }
 }
 
+interface pingProps {
+    userID: string,
+    timeStamp: number
+}
+
 export default function RoomPage(props: RoomPageProps) {
     const { data: session } = useSession();
     const [userStatus, updateUserStatus] = useState(false);
     const [checkForRedirect, setCheckForRedirect] = useState(false);
     const [userData, updateUserData] = useState<SessionUserProps | null>()
     const [ringed, updateRinged] = useState(false)
-    const [pings, updatePings] = useState<number[]>([])
+    const [pings, updatePings] = useState<any[]>([])
+    const [roomUsers, updateRoomUser] = useState<pingProps[]>(); // 
     // redirect the user if the room does not exist
     useEffect(() => {
         (async () => {
@@ -65,30 +74,58 @@ export default function RoomPage(props: RoomPageProps) {
             async function onConnect() {
                 console.log(`Connected to ${props.params.roomid}`);
                 let user = null;
-                while (user === null ){
+                while (user === null) {
                     user = await getSessionUser();
                 }
                 socket.emit("joinRoom", props.params.roomid, user.id);
+                // FIX
+                // Error adding room member: TypeError: Cannot read properties of undefined (reading 'push')
+                // await addRoomMember(props.params.roomid, user.id);
             }
+
             function onResetRing() {
                 console.log("reset recived");
                 updateRinged(false);
                 updatePings([]);
             }
 
-            function onBuzz(timestamp: number) {
+            function onBuzz(timestamp: number, userID: string) {
                 console.log(`ping gotten ${userStatus}`);
-                console.log("Ping recieved")
-                updatePings([...pings, timestamp])
+                console.log("Ping recieved");
+                const ping: pingProps = {
+                    userID: userID,
+                    timeStamp: timestamp,
+                }
+                updatePings([...pings, ping]);
             }
 
+            async function onJoinRoom(userID: string) {
+                // TODO FIX
+                // const joinedUser = await getUser(userID);
+                // if (joinedUser == null || joinedUser == undefined) {
+                //     console.error("Joined user not found");
+                // }
+                // console.log(`Recieved joinedUser: ${JSON.stringify([...joinedUser])}`);
+                // updateRoomUser([...roomUsers, joinedUser]);
+            }
+
+            async function onDisconnect() {
+                // clear user data
+                // TODO FIX
+                // await clearGameInfo();
+            }
+
+            socket.on("joinRoom", async (userID) => { onJoinRoom(userID) });
             socket.on("connect", onConnect);
             socket.on("resetBuzzers", onResetRing);
             socket.on("buzz", onBuzz);
+            socket.on("disconnect", async () => { onDisconnect() });
+
             return () => {
                 socket.off("connect", onConnect);
                 socket.off("buzz", onBuzz);
                 socket.off("resetBuzzers", onResetRing);
+                socket.off("joinRoom", onJoinRoom);
             }
         }
         socketActions();
@@ -107,7 +144,6 @@ export default function RoomPage(props: RoomPageProps) {
         getUser();
     }, [session]);
 
-
     async function closeRoom(roomid: string) {
         console.log("Close Room Triggered")
         await removeRoom(roomid);
@@ -118,7 +154,11 @@ export default function RoomPage(props: RoomPageProps) {
         if (!ringed) {
             console.log("buzz sending");
             const timeStamp = Date.now();
-            socket.emit("buzz", timeStamp, props.params.roomid);
+            let user = await getSessionUser()
+            if (user === null || user === undefined) {
+                user = await getSessionUser();
+            }
+            socket.emit("buzz", timeStamp, props.params.roomid, user?.id);
             updateRinged(true);
         }
         console.log(`Buzz sent`);
@@ -140,15 +180,21 @@ export default function RoomPage(props: RoomPageProps) {
             <p className="m-3"> User is Admin: {(userStatus.toString())}</p>
             <p className="m-3">You are in room {props.params.roomid}</p>
 
-            {userStatus &&
-                <> <p className="m-3"> Total Pings </p>
+            {userStatus && (
+                <>
+                    <p className="m-3"> Total Pings </p>
                     <ul>
-                        {pings.map((ping, index) => (
-                            <li key={index}>{ping}</li>
-                        ))}
+                        {pings.map((ping, index) => {
+                            console.log(ping);
+                            return (
+                                <li key={index}>
+                                    User ID: {ping.userID}, Timestamp: {new Date(ping.timeStamp).toLocaleString()}
+                                </li>
+                            );
+                        })}
                     </ul>
                 </>
-            }
+            )}
             <p className="m-3"> Users in rooms </p>
             <ul className="m-3">
                 <li> ~test item~ </li>

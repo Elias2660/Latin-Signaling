@@ -3,6 +3,7 @@ import connectDB from "@/config/database";
 import Room from "@/models/Room";
 import User from "@/models/User";
 import getSessionUser from "@/utils/getServerSession";
+import { getSession } from "next-auth/react";
 
 export async function isRoomAdmin(roomID: string): Promise<boolean> {
   // given a room id and user id, check if the user is an admin of the room
@@ -49,7 +50,6 @@ export async function addAdmintoRoom(roomID: string, adminData: string[]) {
   // given a room id, add the specific user as admin to the room
 }
 
-
 export async function makeAdmin(userID: string) {
   // given a user id, make the user an admin
   try {
@@ -63,5 +63,26 @@ export async function makeAdmin(userID: string) {
     await user.save();
   } catch (error) {
     console.error("Error making user admin:", error);
+  }
+}
+
+export async function clearGameInfo() {
+  // given a user id, clear the user's game information
+  try {
+    await connectDB();
+    const userData = await getSessionUser();
+    if (userData === null || userData === undefined) {
+      console.error("User not found");
+      return false;
+    }
+    const user = await User.findOne({ _id: userData.id });
+    if (user === null) {
+      console.error("User not found");
+      return false;
+    }
+    user.game_info = {};
+    await user.save();
+  } catch (error) {
+    console.error("Error clearing game info:", error);
   }
 }

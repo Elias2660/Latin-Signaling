@@ -1,5 +1,4 @@
-import { Schema, model, models, Document, Model } from "mongoose";
-import User from "./User";
+import { Schema, model, models, Document, Model, Types } from "mongoose";
 
 const RoomSchema = new Schema({
   name: {
@@ -13,12 +12,8 @@ const RoomSchema = new Schema({
     unique: [true, "Login code already exists"],
   },
   members: {
-    type: [User],
-    // interface Member {
-    //   name: string;
-    //   team: string;
-    //   userStatus: string;
-    // };
+    type: [Types.ObjectId],
+    ref: "User",
     default: [],
   },
   teams: {
