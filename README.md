@@ -1,7 +1,8 @@
 This is a [Next.js](https://nextjs.org/) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
 
 TODO: 
-- Fill out socketing for the rooms 
+- Finishing implementing user list
+- make sure that on refresh user cannot make another ping
 - Add way to timeout rooms
 - Work on creating admin roles and checking the system for sending and checking the signals
 
