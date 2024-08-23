@@ -12,6 +12,7 @@ import { update } from "lodash";
 import { getUser } from "@/actions/UserActions";
 import { join } from "path";
 import { addRoomMember } from "@/actions/RoomActions";
+import { addPingToRoom, getRoomPings, clearPings } from "@/actions/RoomActions";
 
 interface RoomPageProps {
     params: {
@@ -41,8 +42,8 @@ export default function RoomPage(props: RoomPageProps) {
     const [checkForRedirect, setCheckForRedirect] = useState(false);
     const [userData, updateUserData] = useState<SessionUserProps | null>()
     const [ringed, updateRinged] = useState(false)
-    const [pings, updatePings] = useState<any[]>([])
-    const [roomUsers, updateRoomUser] = useState<pingProps[]>(); // 
+    const [pings, updatePings] = useState<pingProps[]>([])
+    const [roomUsers, updateRoomUser] = useState<string[]>([]); // 
     // redirect the user if the room does not exist
     useEffect(() => {
         (async () => {
@@ -78,43 +79,42 @@ export default function RoomPage(props: RoomPageProps) {
                     user = await getSessionUser();
                 }
                 socket.emit("joinRoom", props.params.roomid, user.id);
+                let pngs = await getRoomPings(props.params.roomid);
+                updatePings(pngs);
                 // FIX
                 // Error adding room member: TypeError: Cannot read properties of undefined (reading 'push')
                 // await addRoomMember(props.params.roomid, user.id);
             }
 
-            function onResetRing() {
+            async function onResetRing() {
                 console.log("reset recived");
                 updateRinged(false);
+                let pis = await getRoomPings(props.params.roomid);
                 updatePings([]);
             }
 
-            function onBuzz(timestamp: number, userID: string) {
+            async function onBuzz(timestamp: number, userID: string) {
                 console.log(`ping gotten ${userStatus}`);
                 console.log("Ping recieved");
-                const ping: pingProps = {
-                    userID: userID,
-                    timeStamp: timestamp,
-                }
-                updatePings([...pings, ping]);
+                const pis = await getRoomPings(props.params.roomid);
+                updatePings(pis);
             }
 
             async function onJoinRoom(userID: string) {
-                // TODO FIX
-                // const joinedUser = await getUser(userID);
-                // if (joinedUser == null || joinedUser == undefined) {
-                //     console.error("Joined user not found");
-                // }
-                // console.log(`Recieved joinedUser: ${JSON.stringify([...joinedUser])}`);
-                // updateRoomUser([...roomUsers, joinedUser]);
+                updateRoomUser([...roomUsers, userID])
             }
 
             async function onDisconnect() {
+                socket.emit("otherUserLeftRoom", props.params.roomid, )
                 // clear user data
                 // TODO FIX
                 // await clearGameInfo();
             }
 
+            async function onOtherUserLeave(userID: string) {
+                updateRoomUser(roomUsers.filter(uID => uID !== userID));
+            }
+            socket.on("otherUserLeftRoom", onOtherUserLeave);
             socket.on("joinRoom", async (userID) => { onJoinRoom(userID) });
             socket.on("connect", onConnect);
             socket.on("resetBuzzers", onResetRing);
@@ -122,6 +122,7 @@ export default function RoomPage(props: RoomPageProps) {
             socket.on("disconnect", async () => { onDisconnect() });
 
             return () => {
+                socket.off("otherUserLeftRoom", onOtherUserLeave);
                 socket.off("connect", onConnect);
                 socket.off("buzz", onBuzz);
                 socket.off("resetBuzzers", onResetRing);
@@ -145,7 +146,10 @@ export default function RoomPage(props: RoomPageProps) {
     }, [session]);
 
     async function closeRoom(roomid: string) {
-        console.log("Close Room Triggered")
+        console.log("Close Room Triggered");
+        if (userStatus) {
+            socket.emit("roomClosing", roomid);
+        }
         await removeRoom(roomid);
     }
 
@@ -155,11 +159,16 @@ export default function RoomPage(props: RoomPageProps) {
             console.log("buzz sending");
             const timeStamp = Date.now();
             let user = await getSessionUser()
-            if (user === null || user === undefined) {
+            while (user === null || user === undefined) {
                 user = await getSessionUser();
             }
+            updateRinged(true); // very important because there could be button race conditions
             socket.emit("buzz", timeStamp, props.params.roomid, user?.id);
-            updateRinged(true);
+            const ping = {
+                userID: user.id,
+                timeStamp: timeStamp,
+            }
+            await addPingToRoom(props.params.roomid, ping)
         }
         console.log(`Buzz sent`);
     }
@@ -168,12 +177,12 @@ export default function RoomPage(props: RoomPageProps) {
         console.log("sending reset");
         socket.emit("resetBuzzers", props.params.roomid);
         updatePings([]);
+        await clearPings(props.params.roomid);
         console.log("reset sent");
     }
 
     return (<div className="h-full w-full m-3">
-        {!checkForRedirect && <LoadingSpinner />}
-        {checkForRedirect && <><Link href="/rooms/join" className="m-3 bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
+        {!checkForRedirect ? <LoadingSpinner /> : <><Link href="/rooms/join" className="m-3 bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
             Go back to joined room
         </Link>
             <p className="m-3">Current Session user {userData?.user.name}.</p>
@@ -184,7 +193,7 @@ export default function RoomPage(props: RoomPageProps) {
                 <>
                     <p className="m-3"> Total Pings </p>
                     <ul>
-                        {pings.map((ping, index) => {
+                        {pings.sort((a, b) => a.timeStamp - b.timeStamp).map((ping, index) => {
                             console.log(ping);
                             return (
                                 <li key={index}>

@@ -28,6 +28,10 @@ const RoomSchema = new Schema({
     type: Boolean,
     default: false,
   },
+  pings: {
+    type: [Object],
+    default: [],
+  }
 });
 
 const Room = models.Room || model("Room", RoomSchema);

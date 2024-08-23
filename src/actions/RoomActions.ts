@@ -4,6 +4,7 @@ import connectDB from "@/config/database";
 import User from "@/models/User";
 import getSessionUser from "@/utils/getServerSession";
 import { isRoomAdmin } from "./adminActions";
+import { get } from "lodash";
 
 export async function getRoomInfo(roomID: string): Promise<typeof Room | null> {
   try {
@@ -89,4 +90,48 @@ export async function addMemberToTeam(
 
 export async function removeRoomMember() {
   // remove a member from a room
+}
+
+interface pingProps {
+  userID: string;
+  timeStamp: number;
+}
+
+export async function addPingToRoom(roomid: string, ping: pingProps) {
+  // add a ping to a room
+  try {
+    await connectDB();
+    const room = await Room.findOne({ login_code: roomid });
+    if (room === null || room === undefined) {
+      console.error("Room not found");
+      return false;
+    }
+    room.pings.push(ping);
+    await room.save();
+  } catch (error) {
+    console.error("Error adding ping to room:", error);
+  }
+}
+
+export async function clearPings(roomid: string) {
+  // clear pings from a room
+  await connectDB();
+  const room = await Room.findOne({ login_code: roomid });
+  if (room === null || room === undefined) {
+    console.error("Room not found");
+    return false;
+  }
+  room.pings = [];
+  await room.save();
+}
+
+export async function getRoomPings(roomid: string):Promise<pingProps[]> {
+  // get the pings from a room
+  await connectDB();
+  const room = await Room.findOne({ login_code: roomid });
+  if (room === null || room === undefined) {
+    console.error("Room not found");
+    return [];
+  }
+  return room.pings;
 }
