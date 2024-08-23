@@ -12,8 +12,7 @@ const RoomSchema = new Schema({
     unique: [true, "Login code already exists"],
   },
   members: {
-    type: [Types.ObjectId],
-    ref: "User",
+    type: [Object],
     default: [],
   },
   teams: {

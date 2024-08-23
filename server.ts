@@ -60,12 +60,16 @@ app.prepare().then(() => {
       socket.to(user).emit("kicked");
     });
 
-    socket.on("resetBuzzers", (roomID) => {
+    socket.on("resetBuzzers", (roomID: string) => {
       // resets the list
       console.log(
         `🔄 ${socket.id.substring(0, 2)} resetting to room ${roomID}`
       );
       socket.broadcast.to(roomID).emit("resetBuzzers");
+    });
+
+    socket.on("otherUserLeftRoom", (roomID, userID) => {
+      socket.broadcast.to(roomID).emit("otherUserLeftRoom", userID);
     });
   });
 

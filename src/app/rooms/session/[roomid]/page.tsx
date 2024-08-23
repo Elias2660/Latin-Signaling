@@ -13,6 +13,7 @@ import { getUser } from "@/actions/UserActions";
 import { join } from "path";
 import { addRoomMember } from "@/actions/RoomActions";
 import { addPingToRoom, getRoomPings, clearPings } from "@/actions/RoomActions";
+import { timeStamp } from "console";
 
 interface RoomPageProps {
     params: {
@@ -96,8 +97,11 @@ export default function RoomPage(props: RoomPageProps) {
             async function onBuzz(timestamp: number, userID: string) {
                 console.log(`ping gotten ${userStatus}`);
                 console.log("Ping recieved");
-                const pis = await getRoomPings(props.params.roomid);
-                updatePings(pis);
+                const p:pingProps = {
+                    userID: userID,
+                    timeStamp: timestamp,
+                }
+                updatePings([...pings, p]);
             }
 
             async function onJoinRoom(userID: string) {
@@ -105,10 +109,12 @@ export default function RoomPage(props: RoomPageProps) {
             }
 
             async function onDisconnect() {
-                socket.emit("otherUserLeftRoom", props.params.roomid, )
-                // clear user data
-                // TODO FIX
-                // await clearGameInfo();
+                let user = await getSessionUser();
+                while (user == null || user == undefined) {
+                    user = await getSessionUser();
+                }
+                
+                socket.emit("otherUserLeftRoom", props.params.roomid, user.id);
             }
 
             async function onOtherUserLeave(userID: string) {
