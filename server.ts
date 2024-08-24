@@ -1,6 +1,7 @@
 import { createServer } from "node:http";
 import next from "next";
 import { Server } from "socket.io";
+import { disconnect } from "node:process";
 
 // handing disconnections socket.io: https://stackoverflow.com/questions/17287330/socket-io-handling-disconnect-event
 
@@ -74,6 +75,11 @@ app.prepare().then(() => {
       console.log(`🚪 ${userID} left room ${roomID}`);
       socket.broadcast.to(roomID).emit("otherUserLeftRoom", userID);
     });
+
+    socket.on("disconnect", () => {
+      // console.log(`👋 user ${socket.id.substring(0,2)} disconnected`);
+    })
+
   });
 
   httpServer.listen(port, () => {
