@@ -15,7 +15,6 @@ interface userRoomProps {
 }
 
 
-
 export async function getRoomInfo(roomID: string): Promise<typeof Room | null> {
   try {
     await connectDB();

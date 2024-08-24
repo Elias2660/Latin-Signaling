@@ -11,9 +11,9 @@ import getSessionUser from "@/utils/getServerSession";
 import { update } from "lodash";
 import { getUser } from "@/actions/UserActions";
 import { join } from "path";
-import { addRoomMember } from "@/actions/RoomActions";
-import { addPingToRoom, getRoomPings, clearPings } from "@/actions/RoomActions";
+import { addPingToRoom, getRoomPings, clearPings, addMemberToTeam } from "@/actions/RoomActions";
 import { timeStamp } from "console";
+import { getRoomMembers, addRoomMember, removeRoomMember } from "@/actions/RoomActions";
 
 interface RoomPageProps {
     params: {
@@ -82,6 +82,7 @@ export default function RoomPage(props: RoomPageProps) {
                 socket.emit("joinRoom", props.params.roomid, user.id);
                 let pngs = await getRoomPings(props.params.roomid);
                 updatePings(pngs);
+                await addRoomMember(user.id, props.params.roomid)
                 // FIX
                 // Error adding room member: TypeError: Cannot read properties of undefined (reading 'push')
                 // await addRoomMember(props.params.roomid, user.id);
@@ -113,8 +114,9 @@ export default function RoomPage(props: RoomPageProps) {
                 while (user == null || user == undefined) {
                     user = await getSessionUser();
                 }
-                
+                await removeRoomMember(user.id, props.params.roomid);
                 socket.emit("otherUserLeftRoom", props.params.roomid, user.id);
+            
             }
 
             async function onOtherUserLeave(userID: string) {
