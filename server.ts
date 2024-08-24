@@ -2,6 +2,8 @@ import { createServer } from "node:http";
 import next from "next";
 import { Server } from "socket.io";
 
+// handing disconnections socket.io: https://stackoverflow.com/questions/17287330/socket-io-handling-disconnect-event
+
 const dev = process.env.NODE_ENV !== "production";
 const hostname = "localhost";
 const port = 3000;
@@ -69,6 +71,7 @@ app.prepare().then(() => {
     });
 
     socket.on("otherUserLeftRoom", (roomID, userID) => {
+      console.log(`🚪 ${userID} left room ${roomID}`);
       socket.broadcast.to(roomID).emit("otherUserLeftRoom", userID);
     });
   });

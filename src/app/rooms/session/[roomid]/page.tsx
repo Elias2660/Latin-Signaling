@@ -44,7 +44,7 @@ export default function RoomPage(props: RoomPageProps) {
     const [userData, updateUserData] = useState<SessionUserProps | null>()
     const [ringed, updateRinged] = useState(false)
     const [pings, updatePings] = useState<pingProps[]>([])
-    const [roomUsers, updateRoomUser] = useState<string[]>([]); // 
+    const [roomUsers, updateRoomUsers] = useState<string[]>([]); // 
     // redirect the user if the room does not exist
     useEffect(() => {
         (async () => {
@@ -52,6 +52,11 @@ export default function RoomPage(props: RoomPageProps) {
             setCheckForRedirect(true);
         })();
     }, []);
+
+    interface userRoomProps {
+        userID: string;
+        pinged: boolean;
+      }
 
     useEffect(() => {
         const getAdminStatus = async () => {
@@ -79,26 +84,24 @@ export default function RoomPage(props: RoomPageProps) {
                 while (user === null) {
                     user = await getSessionUser();
                 }
-                socket.emit("joinRoom", props.params.roomid, user.id);
                 let pngs = await getRoomPings(props.params.roomid);
                 updatePings(pngs);
-                await addRoomMember(user.id, props.params.roomid)
-                // FIX
-                // Error adding room member: TypeError: Cannot read properties of undefined (reading 'push')
-                // await addRoomMember(props.params.roomid, user.id);
+                const otherUsers = await getRoomMembers(props.params.roomid);
+                updateRoomUsers([...roomUsers, ...(otherUsers?.map(user => user.userID) || [])]);
+                await addRoomMember(user.id, props.params.roomid);
+                socket.emit("joinRoom", props.params.roomid, user.id);
             }
 
             async function onResetRing() {
                 console.log("reset recived");
                 updateRinged(false);
-                let pis = await getRoomPings(props.params.roomid);
                 updatePings([]);
             }
 
             async function onBuzz(timestamp: number, userID: string) {
                 console.log(`ping gotten ${userStatus}`);
                 console.log("Ping recieved");
-                const p:pingProps = {
+                const p: pingProps = {
                     userID: userID,
                     timeStamp: timestamp,
                 }
@@ -106,30 +109,39 @@ export default function RoomPage(props: RoomPageProps) {
             }
 
             async function onJoinRoom(userID: string) {
-                updateRoomUser([...roomUsers, userID])
+                updateRoomUsers([...roomUsers, userID])
             }
 
             async function onDisconnect() {
+                console.log(`Client disconnecting`)
                 let user = await getSessionUser();
                 while (user == null || user == undefined) {
                     user = await getSessionUser();
                 }
-                await removeRoomMember(user.id, props.params.roomid);
                 socket.emit("otherUserLeftRoom", props.params.roomid, user.id);
-            
+                await removeRoomMember(user.id, props.params.roomid);
             }
 
             async function onOtherUserLeave(userID: string) {
-                updateRoomUser(roomUsers.filter(uID => uID !== userID));
+                updateRoomUsers(roomUsers.filter(uID => uID !== userID));
             }
             socket.on("otherUserLeftRoom", onOtherUserLeave);
             socket.on("joinRoom", async (userID) => { onJoinRoom(userID) });
             socket.on("connect", onConnect);
             socket.on("resetBuzzers", onResetRing);
             socket.on("buzz", onBuzz);
-            socket.on("disconnect", async () => { onDisconnect() });
+            // socket.on("disconnect", async () => { onDisconnect() });
 
-            return () => {
+            return async () => {
+
+                let user = await getSessionUser();
+                while (user == null || user == undefined) {
+                    user = await getSessionUser();
+                }
+                socket.emit("otherUserLeftRoom", props.params.roomid, user.id);
+                await removeRoomMember(user.id, props.params.roomid);
+
+                
                 socket.off("otherUserLeftRoom", onOtherUserLeave);
                 socket.off("connect", onConnect);
                 socket.off("buzz", onBuzz);
@@ -189,43 +201,62 @@ export default function RoomPage(props: RoomPageProps) {
         console.log("reset sent");
     }
 
-    return (<div className="h-full w-full m-3">
-        {!checkForRedirect ? <LoadingSpinner /> : <><Link href="/rooms/join" className="m-3 bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
-            Go back to joined room
-        </Link>
-            <p className="m-3">Current Session user {userData?.user.name}.</p>
-            <p className="m-3"> User is Admin: {(userStatus.toString())}</p>
-            <p className="m-3">You are in room {props.params.roomid}</p>
-
-            {userStatus && (
+    return (
+        <div className="h-full w-full m-3">
+            {!checkForRedirect ? (
+                <LoadingSpinner />
+            ) : (
                 <>
-                    <p className="m-3"> Total Pings </p>
-                    <ul>
-                        {pings.sort((a, b) => a.timeStamp - b.timeStamp).map((ping, index) => {
-                            console.log(ping);
-                            return (
-                                <li key={index}>
-                                    User ID: {ping.userID}, Timestamp: {new Date(ping.timeStamp).toLocaleString()}
-                                </li>
-                            );
-                        })}
+                    <Link href="/rooms/join" className="m-3 bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
+                        Go back to joined room
+                    </Link>
+                    <p className="m-3">Current Session user {userData?.user.name}.</p>
+                    <p className="m-3"> User is Admin: {(userStatus.toString())}</p>
+                    <p className="m-3">You are in room {props.params.roomid}</p>
+
+                    {userStatus && (
+                        <>
+                            <p className="m-3"> Total Pings </p>
+                            <ul>
+                                {pings.sort((a, b) => a.timeStamp - b.timeStamp).map((ping, index) => {
+                                    console.log(ping);
+                                    return (
+                                        <li key={index}>
+                                            User ID: {ping.userID}, Timestamp: {new Date(ping.timeStamp).toLocaleString()}
+                                        </li>
+                                    );
+                                })}
+                            </ul>
+                        </>
+                    )}
+                    <p className="m-3"> Users in rooms </p>
+                    <ul className="m-3">
+                        {roomUsers.map((user: string, index) => (
+                            <li key={index}>{user}</li>
+                        ))}
                     </ul>
+
+                    <Link href="/rooms/join" className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded m-3">
+                        Leave Room
+                    </Link>
+
+                    {userStatus && (
+                        <button onClick={async () => closeRoom(props.params.roomid)} className="bg-red-500 hover:bg-red-900 text-white font-bold py-2 px-4 rounded m-3">
+                            close Room
+                        </button>
+                    )}
+                    {!userStatus && (
+                        <button onClick={async () => sendBuzz()} className={`${!ringed && "bg-teal-600"} ${ringed && "bg-teal-900"} hover:bg-teal-900 text-white font-bold py-2 px-4 rounded m-3`}>
+                            Send Ping to Admin
+                        </button>
+                    )}
+                    {userStatus && (
+                        <button onClick={async () => sendReset()} className={`${!ringed && "bg-teal-600"} ${ringed && "bg-teal-900"} hover:bg-teal-900 text-white font-bold py-2 px-4 rounded m-3`}>
+                            Reset
+                        </button>
+                    )}
                 </>
             )}
-            <p className="m-3"> Users in rooms </p>
-            <ul className="m-3">
-                <li> ~test item~ </li>
-            </ul>
-
-            <Link href="/rooms/join" className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded m-3">
-                Leave Room
-            </Link>
-
-            {userStatus && <button onClick={async () => closeRoom(props.params.roomid)} className="bg-red-500 hover:bg-red-900 text-white font-bold py-2 px-4 rounded m-3">
-                close Room
-            </button>}
-            {!userStatus && <button onClick={async () => sendBuzz()} className={`${!ringed && "bg-teal-600"} ${ringed && "bg-teal-900"} hover:bg-teal-900 text-white font-bold py-2 px-4 rounded m-3`}> Send Ping to Admin </button>}
-            {userStatus && <button onClick={async () => sendReset()} className={`${!ringed && "bg-teal-600"} ${ringed && "bg-teal-900"} hover:bg-teal-900 text-white font-bold py-2 px-4 rounded m-3`}> Reset </button>}
-        </>}
-    </div>);
+        </div>
+    );
 }

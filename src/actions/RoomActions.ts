@@ -39,7 +39,7 @@ export async function isRoom(roomID: string): Promise<boolean> {
   return false;
 }
 
-export async function getRoomMembers(roomID: string) {
+export async function getRoomMembers(roomID: string): Promise<userRoomProps[] | null> {
   // get the members of a room
   try {
     await connectDB();
