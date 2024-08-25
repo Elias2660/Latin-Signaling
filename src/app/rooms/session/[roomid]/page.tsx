@@ -1,11 +1,10 @@
 "use client"
-import socket from "@/socket";
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useOptimistic, useState } from "react";
 import { clearGameInfo, isRoomAdmin } from "@/actions/adminActions";
 import removeRoom from "@/actions/removeRoom";
 import redirectIfNotValid from "@/actions/redirectIfNotValid";
-import { signIn, signOut, useSession, getProviders } from "next-auth/react"
+import { signIn, signOut, useSession, getProviders, getSession } from "next-auth/react"
 import LoadingSpinner from "@/components/LoadingSpinner";
 import getSessionUser from "@/utils/getServerSession";
 import { update } from "lodash";
@@ -14,6 +13,13 @@ import { join } from "path";
 import { addPingToRoom, getRoomPings, clearPings, addMemberToTeam } from "@/actions/RoomActions";
 import { timeStamp } from "console";
 import { getRoomMembers, addRoomMember, removeRoomMember } from "@/actions/RoomActions";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import Router from "next/router";
+import { io } from "socket.io-client";
+import socketIO from 'socket.io-client';
+import { use } from "react";
+import { useMemo } from "react";
+
 
 interface RoomPageProps {
     params: {
@@ -44,8 +50,14 @@ export default function RoomPage(props: RoomPageProps) {
     const [userData, updateUserData] = useState<SessionUserProps | null>()
     const [ringed, updateRinged] = useState(false)
     const [pings, updatePings] = useState<pingProps[]>([])
-    const [roomUsers, updateRoomUsers] = useState<string[]>([]); // 
-    // redirect the user if the room does not exist
+    const [roomUsers, updateRoomUsers] = useState<string[]>([]);
+    const [connected, setConnectedStatus] = useState(false);
+    const [transport, setTransport] = useState("polling");
+
+
+    const socket = useMemo(() => io(`localhost:3000`), []);
+
+    
     useEffect(() => {
         (async () => {
             await redirectIfNotValid(props.params.roomid);
@@ -56,7 +68,7 @@ export default function RoomPage(props: RoomPageProps) {
     interface userRoomProps {
         userID: string;
         pinged: boolean;
-      }
+    }
 
     useEffect(() => {
         const getAdminStatus = async () => {
@@ -72,23 +84,31 @@ export default function RoomPage(props: RoomPageProps) {
     }, [session]);
 
     useEffect(() => {
-
         const socketActions = async () => {
             if (socket.connected) {
+                console.log("socket connected");
                 onConnect();
             }
 
+            let user = await getSessionUser()
+            while (user === null || user === undefined) {
+                console.log(`getting session user: ${user}`);
+                user = await getSessionUser();
+            }
+
             async function onConnect() {
+                setConnectedStatus(true);
+                console.log(`Socket id: ${socket.id}`);
                 console.log(`Connected to ${props.params.roomid}`);
-                let user = null;
+                let user = await getSessionUser();
                 while (user === null) {
                     user = await getSessionUser();
                 }
                 let pngs = await getRoomPings(props.params.roomid);
                 updatePings(pngs);
                 const otherUsers = await getRoomMembers(props.params.roomid);
-                updateRoomUsers([...roomUsers, ...(otherUsers?.map(user => user.userID) || [])]);
                 await addRoomMember(user.id, props.params.roomid);
+                updateRoomUsers([...roomUsers, ...(otherUsers?.map(user => user.userID) || []), user.id]);
                 socket.emit("joinRoom", props.params.roomid, user.id);
             }
 
@@ -112,45 +132,38 @@ export default function RoomPage(props: RoomPageProps) {
                 updateRoomUsers([...roomUsers, userID])
             }
 
-            async function onDisconnect() {
-                console.log(`Client disconnecting`)
-                let user = await getSessionUser();
-                while (user == null || user == undefined) {
-                    user = await getSessionUser();
-                }
-                socket.emit("otherUserLeftRoom", props.params.roomid, user.id);
-                await removeRoomMember(user.id, props.params.roomid);
+            async function onOtherUserLeave() {
+                console.log(`Other user left`);
+                const members = await getRoomMembers(props.params.roomid);
+                const memberIDs = members?.map((member: userRoomProps) => member.userID) || [];
+                updateRoomUsers(memberIDs);
             }
 
-            async function onOtherUserLeave(userID: string) {
-                updateRoomUsers(roomUsers.filter(uID => uID !== userID));
+            async function onDisconnect() {
+                // disconnect is not handled correctly
+                console.log(`SOCKET DISCONNECTING`);
             }
+
             socket.on("otherUserLeftRoom", onOtherUserLeave);
-            socket.on("joinRoom", async (userID) => { onJoinRoom(userID) });
+            socket.on("joinRoom", onJoinRoom);
             socket.on("connect", onConnect);
             socket.on("resetBuzzers", onResetRing);
             socket.on("buzz", onBuzz);
-            // socket.on("disconnect", async () => { onDisconnect() });
+            socket.on("disconnect", onDisconnect)
 
             return async () => {
-
-                let user = await getSessionUser();
-                while (user == null || user == undefined) {
-                    user = await getSessionUser();
-                }
-                socket.emit("otherUserLeftRoom", props.params.roomid, user.id);
-                await removeRoomMember(user.id, props.params.roomid);
-
-                
+                console.log("socket disconnecting");
                 socket.off("otherUserLeftRoom", onOtherUserLeave);
                 socket.off("connect", onConnect);
+                socket.off("disconnect", onDisconnect);
                 socket.off("buzz", onBuzz);
                 socket.off("resetBuzzers", onResetRing);
                 socket.off("joinRoom", onJoinRoom);
             }
         }
         socketActions();
-    }, [])
+    }, [session])
+
 
     useEffect(() => {
         const getUser = async () => {
@@ -164,6 +177,7 @@ export default function RoomPage(props: RoomPageProps) {
         }
         getUser();
     }, [session]);
+
 
     async function closeRoom(roomid: string) {
         console.log("Close Room Triggered");
@@ -183,7 +197,7 @@ export default function RoomPage(props: RoomPageProps) {
                 user = await getSessionUser();
             }
             updateRinged(true); // very important because there could be button race conditions
-            socket.emit("buzz", timeStamp, props.params.roomid, user?.id);
+            socket.emit("buzz", timeStamp, props.params.roomid, user.id);
             const ping = {
                 userID: user.id,
                 timeStamp: timeStamp,
@@ -207,9 +221,10 @@ export default function RoomPage(props: RoomPageProps) {
                 <LoadingSpinner />
             ) : (
                 <>
-                    <Link href="/rooms/join" className="m-3 bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
-                        Go back to joined room
+                    <Link href="/" className="m-3 bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
+                        Go back to home page
                     </Link>
+                    <p className="m-3">session status: {connected ? "connected" : "not connected"}</p>
                     <p className="m-3">Current Session user {userData?.user.name}.</p>
                     <p className="m-3"> User is Admin: {(userStatus.toString())}</p>
                     <p className="m-3">You are in room {props.params.roomid}</p>
@@ -229,6 +244,8 @@ export default function RoomPage(props: RoomPageProps) {
                             </ul>
                         </>
                     )}
+
+
                     <p className="m-3"> Users in rooms </p>
                     <ul className="m-3">
                         {roomUsers.map((user: string, index) => (
@@ -239,6 +256,7 @@ export default function RoomPage(props: RoomPageProps) {
                     <Link href="/rooms/join" className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded m-3">
                         Leave Room
                     </Link>
+
 
                     {userStatus && (
                         <button onClick={async () => closeRoom(props.params.roomid)} className="bg-red-500 hover:bg-red-900 text-white font-bold py-2 px-4 rounded m-3">

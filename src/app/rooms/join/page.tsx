@@ -1,5 +1,4 @@
 'use client'
-import socket from "@/socket"
 import { useEffect, useState, useRef } from "react"
 import { Session } from "next-auth"
 import connectDB from "@/config/database"
@@ -13,11 +12,6 @@ import { isRoom } from "@/actions/RoomActions";
 
 export default function joinRoom() {
     const { data: session } = useSession();
-
-    const [isConnected, setIsConnected] = useState(false);
-    const [transport, setTransport] = useState("N/A");
-    const [toServer, updateToServer] = useState("");
-    const [fromServer, updateFromServer] = useState("");
     const [providers, setProviders] = useState<Record<string, any> | null>(null);
     const [rooms, setRooms] = useState([""]);
     const [fillboxValidRoom, setFillboxRoomValidity] = useState(false);
@@ -71,58 +65,6 @@ export default function joinRoom() {
         prevSessionRef.current = session;
     }, [rooms, session, prevRoomsRef, prevSessionRef]);
 
-
-    console.log(`Logged Providers: ${providers}`)
-
-    useEffect(() => {
-        if (socket.connected) {
-            onConnect();
-        }
-
-        function onConnect(): void {
-            setIsConnected(true);
-            setTransport(socket.io.engine.transport.name);
-            socket.io.engine.on("upgrade", (transport) => {
-                setTransport(transport.name);
-            });
-            console.log(`${socket.id?.substring(0, 2)} is connected`);
-        }
-
-        function onDisconnect(): void {
-            setIsConnected(false);
-            setTransport("N/A");
-        }
-
-
-        function onPing(toServer: number, fromServer: number): void {
-            updateToServer((toServer).toString());
-            updateFromServer((Date.now() - fromServer).toString());
-        }
-
-        socket.on("connect", onConnect);
-        socket.on("disconnect", onDisconnect);
-        socket.on("ping", onPing);
-
-        return () => {
-            socket.off("connect", onConnect);
-            socket.off("disconnect", onDisconnect);
-            socket.off("ping", onPing);
-        };
-    }, []);
-
-    useEffect(() => {
-        const timeout = setInterval(() => {
-            if (socket.connected) {
-                socket.emit("timecheck", Date.now());
-            } else {
-                updateToServer("-");
-                updateFromServer("-");
-            }
-        }, 1000);
-        return () => clearTimeout(timeout);
-    }, []);
-
-
     async function createAndSetRoom() {
         // this is so that the paragraph tag will display the currently created room
         const response = await createRoom();
@@ -134,7 +76,6 @@ export default function joinRoom() {
 
     useEffect(() => {
         const checkFillboxForValidity = async () => {
-
             const enteredRoomCode: string = (document.getElementById("fillbox") as HTMLInputElement)?.value;
             if (enteredRoomCode !== null && enteredRoomCode !== undefined && enteredRoomCode.length > 0) {
                 const validRoom = await isRoom(enteredRoomCode);
@@ -166,15 +107,7 @@ export default function joinRoom() {
             <Image className="rounded-full" src={profileImage || defaultImg} width={160} height={160} alt="profile pic" priority={false} />
 
             <p>User is {!session && "not"} logged in </p>
-            <p>Status: {isConnected ? "connected" : "disconnected"}</p>
-            <p>Transport: {transport}</p>
-            <p>
-                Time to reach server: {toServer} ms
-            </p>
 
-            <p>
-                Time to come back from server: {fromServer} ms
-            </p>
             {session && <p>
                 List of hosted Rooms: {rooms.join(", ")}
             </p>}

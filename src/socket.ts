@@ -1,7 +1,7 @@
-"use client";
+// "use client";
 
-import { io } from "socket.io-client";
+// import { io } from "socket.io-client";
 
-const socket = io("localhost:3000");
+// const socket = io("localhost:3000");
 
-export default socket;
+// export default socket;

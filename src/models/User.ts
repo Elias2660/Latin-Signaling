@@ -5,6 +5,10 @@ const UserSchema = new Schema({
     type: String,
     required: [true, "Please provide a name"],
   },
+  socket_id: {
+    type: String,
+    default: "",
+  },
   email: {
     type: String,
     required: [true, "Please provide an email"],

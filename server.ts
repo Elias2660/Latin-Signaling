@@ -34,10 +34,15 @@ app.prepare().then(() => {
       socket.emit("ping", t, Date.now()); // the time to get from client to the server, the time to get from server to the client
     });
 
-    socket.on("joinRoom", (room: string, id: string) => {
+    socket.on("joinRoom", async (room: string, id: string) => {
       console.log(`🚪 ${socket.id.substring(0, 2)} joining room ${room}`);
       socket.join(room);
       socket.to(room).emit("joinedRoom", id);
+      let s = await io.in(room).fetchSockets();
+      console.log(`sockets: ${s.length}`);
+      console.log(
+        `people in room: ${JSON.stringify([...s.map((socket) => socket.id)])}`
+      );
     });
 
     socket.on("buzz", (time: number, room: string, userID: string) => {
@@ -52,9 +57,7 @@ app.prepare().then(() => {
       }
       console.log(`socket.rooms: ${JSON.stringify([...socket.rooms])}`);
       console.log(
-        `people in room: ${JSON.stringify([
-          io.sockets.adapter.rooms.get(room),
-        ])}`
+        `people in room: ${JSON.stringify([io.in(room).fetchSockets()])}`
       );
     });
 
@@ -74,12 +77,29 @@ app.prepare().then(() => {
     socket.on("otherUserLeftRoom", (roomID, userID) => {
       console.log(`🚪 ${userID} left room ${roomID}`);
       socket.broadcast.to(roomID).emit("otherUserLeftRoom", userID);
+      console.log(
+        `people in room: ${JSON.stringify([io.in(roomID).fetchSockets()])}`
+      );
     });
 
-    socket.on("disconnect", () => {
-      // console.log(`👋 user ${socket.id.substring(0,2)} disconnected`);
-    })
+    socket.on("disconnect", (userid: string, roomid: string) => {
+      console.log(
+        `👋 user ${socket.id.substring(
+          0,
+          2
+        )} with user id ${userid} disconnected`
+      );
+      socket.broadcast.to(roomid).emit("otherUserLeftRoom");
+      console.log(
+        `people in room: ${JSON.stringify([io.in(roomid).fetchSockets()])}`
+      );
+    });
 
+    socket.on("leaveRoom", (roomID: string, userID: string) => {
+      console.log(`🚪 ${socket.id.substring(0, 2)} leaving room ${roomID}`);
+      socket.leave(roomID);
+      socket.to(roomID).emit("leftRoom", userID);
+    });
   });
 
   httpServer.listen(port, () => {
