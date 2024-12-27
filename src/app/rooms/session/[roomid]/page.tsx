@@ -54,8 +54,7 @@ export default function RoomPage(props: RoomPageProps) {
     const [connected, setConnectedStatus] = useState(false);
     const [transport, setTransport] = useState("polling");
 
-
-    const socket = useMemo(() => io(`localhost:3000`), []);
+    const socket =  useMemo(() => io(`localhost:3000`), []);
 
     
     useEffect(() => {
