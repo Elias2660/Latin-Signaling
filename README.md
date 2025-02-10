@@ -1,5 +1,7 @@
 This is a [Next.js](https://nextjs.org/) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
 
+This project is no longer actively maintained, given the fact we now have actual buzzers
+
 TODO: 
 - Fill out socketing for the rooms 
 - Add way to timeout rooms
